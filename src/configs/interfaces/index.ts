@@ -1,2 +1,2 @@
 export * from './jwtConfig.interface';
-export * from './mysqlconfig.interface';
+export * from './mysqlConfig.interface';

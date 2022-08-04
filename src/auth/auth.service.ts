@@ -4,8 +4,10 @@ import { LoginDto } from './dto';
 import { LoginRes } from './interfaces/LoginRes.interface';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from './interfaces';
-
+import { GoogleUser, JwtPayload } from './interfaces';
+import { User } from 'src/api/user/user.entity';
+import { CreateUserDto } from 'src/api/user/dto';
+import * as genpass from 'generate-password';
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService, private jwtService: JwtService) {}
@@ -24,13 +26,42 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const userValid = await this.validateUser(loginDto);
+    const userValid: User = await this.validateUser(loginDto);
 
     if (!userValid) {
       throw new UnauthorizedException();
     }
 
-    const payload: JwtPayload = { username: userValid.username, sub: userValid.id };
+    const payload: JwtPayload = { userId: userValid.id };
+
+    const loginRes: LoginRes = {
+      accessToken: this.jwtService.sign(payload),
+      accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
+    };
+
+    return loginRes;
+  }
+
+  async googleAuth(googleUser: GoogleUser) {
+    const { google_id, email, name, avatar } = googleUser;
+
+    const userFound = await this.userService.findOneByEmail(email);
+
+    if (!userFound) {
+      const createUserDto: CreateUserDto = {
+        email,
+        name: {
+          first: name.familyName,
+          last: name.givenName,
+        },
+        username: email,
+        password: genpass.generate({ length: 10, numbers: true }),
+        avatar,
+      };
+      return this.userService.createUser(createUserDto);
+    }
+
+    const payload: JwtPayload = { userId: userFound.id };
 
     const loginRes: LoginRes = {
       accessToken: this.jwtService.sign(payload),
