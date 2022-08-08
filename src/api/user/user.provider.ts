@@ -7,4 +7,9 @@ export const UserProviders = [
     useFactory: (dataSource: DataSource) => dataSource.getRepository(User),
     inject: ['DATA_SOURCE'],
   },
+  {
+    provide: 'USER_TREE_REPO',
+    useFactory: (dataSource: DataSource) => dataSource.getTreeRepository(User),
+    inject: ['DATA_SOURCE'],
+  },
 ];

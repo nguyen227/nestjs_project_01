@@ -8,8 +8,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.useGlobalPipes(new ValidationPipe());
-
   await app.listen(configService.get<number>('PORT'));
-  Logger.log(`Server is running at ${await app.getUrl()}`);
+  Logger.log(`Server is running at ${await app.getUrl()}`, 'NestApplication');
 }
 bootstrap();

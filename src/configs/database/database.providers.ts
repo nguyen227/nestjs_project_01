@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { Form } from 'src/api/form/form.entity';
 import { Permission } from 'src/api/permission/permission.entity';
 import { Role } from 'src/api/role/role.entity';
 import { User } from 'src/api/user/user.entity';
@@ -14,7 +15,7 @@ export const databaseProviders = [
       const dataSource = new DataSource({
         type: 'mysql',
         ...MYSQL_CONFIG,
-        entities: [User, Role, Permission],
+        entities: [User, Role, Permission, Form],
         synchronize: true,
       });
       return dataSource.initialize();

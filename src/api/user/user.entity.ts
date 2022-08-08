@@ -1,13 +1,21 @@
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
 import { Name } from 'src/shared/entity/NameExtend';
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  Tree,
+  TreeChildren,
+  TreeParent,
+} from 'typeorm';
+import { Form } from '../form/form.entity';
 import { Role } from '../role/role.entity';
 
 @Entity()
+@Tree('materialized-path')
 export class User extends EntityBaseExtend {
-  @Column({ type: 'bigint', default: null })
-  userID: number;
-
   @Column(() => Name)
   name: Name;
 
@@ -37,8 +45,19 @@ export class User extends EntityBaseExtend {
 
   @ManyToMany(() => Role, (role) => role.users, {
     cascade: ['insert', 'update'],
-    eager: true,
   })
   @JoinTable()
-  roles: Role[];
+  roles: Promise<Role[]>;
+
+  @TreeParent()
+  manager: User;
+
+  @TreeChildren()
+  manage: User[];
+
+  @OneToMany(() => Form, (form) => form.owner)
+  forms: Promise<Form[]>;
+
+  @OneToMany(() => Form, (form) => form.reviewer)
+  reviewForms: Promise<Form[]>;
 }

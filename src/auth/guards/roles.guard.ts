@@ -17,9 +17,9 @@ export class RolesGuard implements CanActivate {
     const jwtPayload: JwtPayload = context.switchToHttp().getRequest().user;
     const { userId } = jwtPayload;
     const authUser = await this.userService.findOneById(userId);
-    const userRoles = authUser.roles.map((role) => role.roleName);
+    const userRoles = (await authUser.roles).map((role) => role.roleName);
 
-    // If user roles contain all role in required roles, then allow access
-    return requiredRoles.every((role) => userRoles.includes(role));
+    // If user roles contain at least one role in required roles, then allow access
+    return requiredRoles.some((role) => userRoles.includes(role));
   }
 }

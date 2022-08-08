@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from 'src/api/user/user.service';
 import { LoginDto } from './dto';
 import { LoginRes } from './interfaces/LoginRes.interface';
@@ -6,8 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleUser, JwtPayload } from './interfaces';
 import { User } from 'src/api/user/user.entity';
-import { CreateUserDto } from 'src/api/user/dto';
 import * as genpass from 'generate-password';
+import { CreateUserDto } from 'src/api/user/dto/user.dto';
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService, private jwtService: JwtService) {}
@@ -29,12 +29,13 @@ export class AuthService {
     const userValid: User = await this.validateUser(loginDto);
 
     if (!userValid) {
-      throw new UnauthorizedException();
+      throw new BadRequestException();
     }
 
     const payload: JwtPayload = { userId: userValid.id };
 
     const loginRes: LoginRes = {
+      userId: userValid.id,
       accessToken: this.jwtService.sign(payload),
       accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
     };
@@ -43,7 +44,7 @@ export class AuthService {
   }
 
   async googleAuth(googleUser: GoogleUser) {
-    const { google_id, email, name, avatar } = googleUser;
+    const { email, name, avatar } = googleUser;
 
     const userFound = await this.userService.findOneByEmail(email);
 
@@ -64,6 +65,7 @@ export class AuthService {
     const payload: JwtPayload = { userId: userFound.id };
 
     const loginRes: LoginRes = {
+      userId: userFound.id,
       accessToken: this.jwtService.sign(payload),
       accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
     };

@@ -12,4 +12,6 @@ export enum RolePermission {
   DELETE_ROLE = 'delete_role',
   CREATE_PERMISSION = 'create_permission',
   DELETE_PERMISSION = 'delete_permission',
+  UPDATE_PERMISSION = 'update_permission',
+  CLOSE_FORM = 'close_form',
 }

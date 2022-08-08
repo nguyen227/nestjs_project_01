@@ -1,5 +1,5 @@
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import { Column, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { Permission } from '../permission/permission.entity';
 import { User } from '../user/user.entity';
 import { UserRole } from './role.enum';
@@ -10,12 +10,11 @@ export class Role extends EntityBaseExtend {
   roleName: UserRole;
 
   @ManyToMany(() => User, (user) => user.roles)
-  users: User[];
+  users: Promise<User[]>;
 
   @ManyToMany(() => Permission, (permission) => permission.roles, {
     cascade: ['insert', 'update'],
-    eager: true,
   })
   @JoinTable()
-  permissions: Permission[];
+  permissions: Promise<Permission[]>;
 }
