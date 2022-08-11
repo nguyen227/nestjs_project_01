@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { Form } from '../form/form.entity';
 import { Role } from '../role/role.entity';
+import { UserType } from './user.constant';
 
 @Entity()
 @Tree('materialized-path')
@@ -43,11 +44,14 @@ export class User extends EntityBaseExtend {
   @Column({ select: false })
   password: string;
 
+  @Column({ type: 'enum', enum: UserType, default: UserType.PROBATIONARY })
+  type: UserType;
+
   @ManyToMany(() => Role, (role) => role.users, {
     cascade: ['insert', 'update'],
   })
   @JoinTable()
-  roles: Promise<Role[]>;
+  roles: Role[];
 
   @TreeParent()
   manager: User;
@@ -56,8 +60,8 @@ export class User extends EntityBaseExtend {
   manage: User[];
 
   @OneToMany(() => Form, (form) => form.owner)
-  forms: Promise<Form[]>;
+  forms: Form[];
 
   @OneToMany(() => Form, (form) => form.reviewer)
-  reviewForms: Promise<Form[]>;
+  reviewForms: Form[];
 }

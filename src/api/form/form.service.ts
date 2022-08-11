@@ -1,36 +1,37 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { FindManyOptions } from 'typeorm';
 import { UserService } from '../user/user.service';
-import { ApproveFormDto, CreateFormDto, SubmitFormDto, UpdateFormDto } from './dto/form.dto';
+import { GetFormReportDto, StatusDto } from './dto';
+import { ApproveFormDto } from './dto/approve-form.dto';
+import { CreateFormDto } from './dto/create-form.dto';
+import { SubmitFormDto } from './dto/submit-form.dto';
+import { UpdateFormDto } from './dto/update-form.dto';
 import { Form } from './form.entity';
 import { FormStatus } from './form.enum';
 import { FormRepository } from './form.repository';
 
 @Injectable()
 export class FormService {
-  constructor(private formRepo: FormRepository, private userService: UserService) {}
+  constructor(
+    private formRepo: FormRepository,
+    @Inject(forwardRef(() => UserService))
+    private userService: UserService,
+  ) {}
 
-  async getAllFormByConditions(query: any): Promise<Form[]> {
-    const { status, reviewerId } = query;
-    const conditions: FindManyOptions = {
-      where: {
-        status,
-        reviewer: {
-          id: reviewerId,
-        },
-      },
-      loadEagerRelations: true,
-    };
-    return this.formRepo.findBy(conditions);
-  }
-
-  async getFormByUserId(userId: number): Promise<Form> {
-    return this.formRepo.findOneBy({ userId });
+  async getFormsByUserId(userId: number, statusDto: StatusDto): Promise<Form[]> {
+    const { status } = statusDto;
+    return this.formRepo.findByUserId(userId, status);
   }
 
   async updateForm(authUserId: number, updateFormDto: UpdateFormDto): Promise<Form> {
     const { formId, form_data } = updateFormDto;
-    const formFound = await this.formRepo.findOneBy({ id: formId });
+    const formFound = await this.formRepo.findOneById(formId);
     if (formFound.owner.id !== authUserId) throw new ForbiddenException();
     const formUpdate = Object.assign(formFound, form_data);
     return formUpdate.save();
@@ -49,7 +50,7 @@ export class FormService {
   async submitForm(userId: number, { formId }: SubmitFormDto): Promise<Form> {
     const userFound = await this.userService.findOneById(userId);
     console.log(userFound.manager);
-    const formFound = await this.formRepo.findOneBy({ id: formId });
+    const formFound = await this.formRepo.findOneById(formId);
     if (formFound.owner.id !== userId) throw new ForbiddenException();
 
     formFound.status = FormStatus.SUBMITED;
@@ -61,10 +62,10 @@ export class FormService {
   async approveForm(authUserId: number, approveFormDto: ApproveFormDto): Promise<Form> {
     const { formId, review } = approveFormDto;
 
-    const formFound = await this.formRepo.findOneBy({ id: formId });
-    const managerFound = await this.userService.findOneById(formFound.owner.id);
-    if (managerFound.id !== authUserId) throw new ForbiddenException(`You can't approve this form`);
+    const formFound = await this.formRepo.findOneByIdWithRelations(formId, ['reviewer']);
 
+    if (formFound.reviewer.id !== authUserId)
+      throw new ForbiddenException(`You can't approve this form`);
     formFound.status = FormStatus.APPROVED;
     formFound.review = review;
 
@@ -72,12 +73,30 @@ export class FormService {
   }
 
   async closeForm(formId: number): Promise<Form> {
-    const formFound = await this.formRepo.findOneBy({ id: formId });
+    const formFound = await this.formRepo.findOneById(formId);
 
     if (!formFound) throw new BadRequestException(`Form not found!`);
 
     formFound.status = FormStatus.CLOSED;
 
     return formFound.save();
+  }
+
+  async getFormReport(query: GetFormReportDto): Promise<[Form[], number]> {
+    const { status, type, reviewerId, ownerId } = query;
+    const conditions: FindManyOptions = {
+      loadRelationIds: true,
+      where: {
+        status,
+        type,
+        reviewer: {
+          id: reviewerId,
+        },
+        owner: {
+          id: ownerId,
+        },
+      },
+    };
+    return this.formRepo.findByConditionsAndCount(conditions);
   }
 }

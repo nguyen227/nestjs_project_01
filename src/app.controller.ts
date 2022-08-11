@@ -5,8 +5,7 @@ import { LoginDto } from './auth/dto';
 import { Public } from './auth/decorators';
 import { User } from './api/user/user.entity';
 import { UserService } from './api/user/user.service';
-import { CreateUserDto } from './api/user/dto/user.dto';
-
+import { CreateUserDto } from './api/user/dto';
 @Controller()
 export class AppController {
   constructor(private authService: AuthService, private userService: UserService) {}

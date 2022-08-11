@@ -1,20 +1,28 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { User } from './user.entity';
-import { UserRepository } from './user.repository';
+import {
+  BadRequestException,
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { RoleService } from '../role/role.service';
-import { UserRole } from '../role/role.enum';
+import { FormService } from '../form/form.service';
 import { Role } from '../role/role.entity';
-import { JwtPayload } from 'src/auth/interfaces';
-import { UpdateProfileDto, CreateUserDto, UpdateUserRoleDto } from './dto/user.dto';
-import { Permission } from '../permission/permission.entity';
+import { UserRole } from '../role/role.enum';
+import { RoleService } from '../role/role.service';
+import { CreateUserDto, UpdateProfileDto } from './dto';
+import { User } from './user.entity';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
   constructor(
     private userRepo: UserRepository,
     private roleService: RoleService,
+    @Inject(forwardRef(() => FormService))
+    private formService: FormService,
     private configService: ConfigService,
   ) {}
 
@@ -48,7 +56,7 @@ export class UserService {
     const userCreate = this.userRepo.create(createUserDto);
 
     const defaultRoleForNewUser = await this.roleService.findOneByRoleName(UserRole.EMPLOYEE);
-    userCreate.roles = Promise.resolve([defaultRoleForNewUser]);
+    userCreate.roles = [defaultRoleForNewUser];
     userCreate.password = bcrypt.hashSync(
       password,
       bcrypt.genSaltSync(this.configService.get('bcrypt_salt')),
@@ -64,29 +72,42 @@ export class UserService {
     return await this.userRepo.getPasswordById(id);
   }
 
-  async updateUserRoleById(id: number, updateUserRoleDto: UpdateUserRoleDto): Promise<User> {
-    const { roles } = updateUserRoleDto;
-
+  async addRoleByUserId(id: number, role: UserRole): Promise<User> {
     const userFound = await this.userRepo.findOneBy({ id });
     if (!userFound) throw new NotFoundException(`User ${id} not found`);
 
-    userFound.roles = Promise.resolve(roles);
+    const roleFound = await this.roleService.findOneByRoleName(role);
+    if (!roleFound) throw new NotFoundException(`Role ${role} not found`);
+
+    const userRoles = await userFound.roles;
+
+    if (userRoles.map((role) => role.roleName).includes(role))
+      throw new BadRequestException(`${userFound.username} already has role ${role}`);
+
+    userRoles.push(roleFound);
+    userFound.roles = userRoles;
     return userFound.save();
   }
 
   async removeUserById(id: number): Promise<User> {
     const userFound = await this.userRepo.findOneBy({ id });
+    if (!userFound) throw new NotFoundException(`User ${id} not found`);
     return userFound.remove();
   }
 
-  async getUserRole(jwtPayload: JwtPayload): Promise<Role[]> {
-    const userFound = await this.userRepo.findOneBy({ id: jwtPayload.userId });
-    return userFound.roles;
+  async getRolesByUserId(id: number): Promise<Role[]> {
+    const roles = await this.userRepo.findRolesById(id);
+    return roles;
+  }
+
+  async getRolesNameByUserId(id: number): Promise<string[]> {
+    const roles = await this.userRepo.findRolesNameById(id);
+    return roles;
   }
 
   async findOneById(id: number): Promise<User> {
     const userFound = await this.userRepo.findOneBy({ id });
-    if (!userFound) throw new NotFoundException(`User ${id} not found`);
+    if (!id || !userFound) throw new NotFoundException(`User ${id} not found`);
     return userFound;
   }
 
@@ -94,19 +115,8 @@ export class UserService {
     return this.userRepo.findOneBy({ email });
   }
 
-  async getUserPermissions({ userId }: JwtPayload): Promise<Permission[]> {
-    const userFound = await this.userRepo.findOneBy({ id: userId });
-
-    const userRoles = await userFound.roles;
-
-    const rolesPermissions: Permission[] = [];
-    for await (const role of userRoles) {
-      const permissions = await role.permissions;
-      rolesPermissions.push(...permissions);
-    }
-    const userPermissions = [...new Set(rolesPermissions.map((permission) => permission.name))];
-    console.log(userPermissions);
-    return null;
+  async getPermissionsNameByUserId(userId: number): Promise<string[]> {
+    return this.userRepo.findPermissionsNameById(userId);
   }
 
   async getUsersMangageList(userId: number): Promise<User[]> {
@@ -117,13 +127,22 @@ export class UserService {
     return this.userRepo.getUserManager(userId);
   }
 
-  async updateUserManage(authUserId: number, userId: number): Promise<User> {
-    const authUser = await this.findOneById(authUserId);
-    const userManage = await this.findOneById(userId);
+  async updateUserManage(userId: number, managerId: number): Promise<User> {
+    const authUser = await this.findOneById(userId);
+    const userManage = await this.findOneById(managerId);
 
     userManage.manager = authUser;
     await userManage.save();
 
     return userManage;
+  }
+
+  async readOwnProfile(authUserId: number): Promise<User> {
+    const userFound = await this.findOneById(authUserId);
+    return userFound;
+  }
+
+  async getUserTree(): Promise<User[]> {
+    return this.userRepo.getUserTree();
   }
 }

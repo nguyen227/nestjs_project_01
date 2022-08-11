@@ -7,7 +7,7 @@ import { RoleRepository } from './role.repository';
 export class RoleService {
   constructor(private roleRepo: RoleRepository) {}
 
-  async findOneById(id: string): Promise<Role> {
+  async findOneById(id: number): Promise<Role> {
     return this.roleRepo.findOneBy({ id });
   }
 

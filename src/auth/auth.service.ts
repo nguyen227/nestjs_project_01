@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { GoogleUser, JwtPayload } from './interfaces';
 import { User } from 'src/api/user/user.entity';
 import * as genpass from 'generate-password';
-import { CreateUserDto } from 'src/api/user/dto/user.dto';
+import { CreateUserDto } from 'src/api/user/dto';
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService, private jwtService: JwtService) {}

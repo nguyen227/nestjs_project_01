@@ -19,9 +19,9 @@ export class Form extends EntityBaseExtend {
   @Column({ default: '' })
   review: string;
 
-  @ManyToOne(() => User, (user) => user.forms, { eager: true })
+  @ManyToOne(() => User, (user) => user.forms)
   owner: User;
 
-  @ManyToOne(() => User, (user) => user.reviewForms, { eager: true })
+  @ManyToOne(() => User, (user) => user.reviewForms)
   reviewer: User;
 }

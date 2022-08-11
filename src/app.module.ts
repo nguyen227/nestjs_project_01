@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AdminModule } from './api/admin/admin.module';
 import { FormModule } from './api/form/form.module';
 import { UserModule } from './api/user/user.module';
 import { AppController } from './app.controller';
@@ -15,6 +16,7 @@ import { LoggerMiddleware } from './shared/middleware/logger.middleware';
     UserModule,
     AuthModule,
     FormModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

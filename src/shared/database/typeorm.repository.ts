@@ -1,4 +1,11 @@
-import { BaseEntity, DeepPartial, Repository } from 'typeorm';
+import {
+  BaseEntity,
+  DeepPartial,
+  FindManyOptions,
+  FindOneOptions,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
 
 export class TypeOrmRepository<T extends BaseEntity> {
   constructor(private baseRepo: Repository<T>) {}
@@ -7,11 +14,19 @@ export class TypeOrmRepository<T extends BaseEntity> {
     return this.baseRepo.create(data);
   }
 
-  async findBy(conditions: any): Promise<T[]> {
+  async find(conditions: FindManyOptions): Promise<T[]> {
     return this.baseRepo.find(conditions);
   }
 
-  async findOneBy(condition: any): Promise<T> {
+  async findOne(condition: FindOneOptions): Promise<T> {
+    return await this.baseRepo.findOne(condition);
+  }
+
+  async findBy(condition: FindOptionsWhere<T>): Promise<T[]> {
+    return this.baseRepo.findBy(condition);
+  }
+
+  async findOneBy(condition: FindOptionsWhere<T>): Promise<T> {
     return await this.baseRepo.findOneBy(condition);
   }
 }
