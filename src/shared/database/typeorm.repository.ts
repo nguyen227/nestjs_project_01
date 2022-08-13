@@ -29,4 +29,12 @@ export class TypeOrmRepository<T extends BaseEntity> {
   async findOneBy(condition: FindOptionsWhere<T>): Promise<T> {
     return await this.baseRepo.findOneBy(condition);
   }
+
+  async findOneWithRelations(key: FindOptionsWhere<T>, relationsList: string[]): Promise<T> {
+    const relations = {};
+    relationsList.forEach((element) => {
+      relations[element] = true;
+    });
+    return this.findOne({ where: key, relations });
+  }
 }

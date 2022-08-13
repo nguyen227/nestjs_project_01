@@ -4,10 +4,13 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
+import { MailService } from 'src/mail/mail.service';
 import { FindManyOptions } from 'typeorm';
+import { RolePermission } from '../permission/permission.enum';
 import { UserService } from '../user/user.service';
-import { GetFormReportDto, StatusDto } from './dto';
+import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
 import { CreateFormDto } from './dto/create-form.dto';
 import { SubmitFormDto } from './dto/submit-form.dto';
@@ -22,11 +25,22 @@ export class FormService {
     private formRepo: FormRepository,
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    private mailService: MailService,
   ) {}
 
   async getFormsByUserId(userId: number, statusDto: StatusDto): Promise<Form[]> {
     const { status } = statusDto;
     return this.formRepo.findByUserId(userId, status);
+  }
+
+  async getFormsByFormId(userId: number, viewFormDto: ViewFormDto): Promise<any> {
+    const { id } = viewFormDto;
+    const userPermissions = await this.userService.getPermissionsNameByUserId(userId);
+    const formFound = await this.formRepo.findOneByIdWithRelations(id, ['owner', 'reviewer']);
+    if (!formFound) throw new NotFoundException();
+    if (formFound.owner.id != userId && !userPermissions.includes(RolePermission.READ_ALL_FORM))
+      throw new ForbiddenException("You don't have permissions to view this form");
+    return formFound;
   }
 
   async updateForm(authUserId: number, updateFormDto: UpdateFormDto): Promise<Form> {
@@ -37,14 +51,18 @@ export class FormService {
     return formUpdate.save();
   }
 
-  async createForm(createFormDto: CreateFormDto): Promise<Form> {
-    const { ownerId } = createFormDto;
-    const userFound = await this.userService.findOneById(ownerId);
-    const manager = await this.userService.getUserManager(userFound.id);
-    const formCreate = this.formRepo.create(createFormDto);
-    formCreate.owner = userFound;
-    formCreate.reviewer = manager;
-    return formCreate.save();
+  async createForm(createFormDto: CreateFormDto): Promise<any> {
+    const { ownerIds } = createFormDto;
+    for await (const ownerId of ownerIds) {
+      const userFound = await this.userService.findOneById(ownerId);
+      const manager = await this.userService.getUserManager(userFound.id);
+      const formCreate = this.formRepo.create(createFormDto);
+      formCreate.owner = userFound;
+      formCreate.reviewer = manager;
+      await formCreate.save();
+      this.mailService.sendNewFormNotification(userFound, formCreate);
+    }
+    return { message: `create form successfully for users: ${ownerIds}` };
   }
 
   async submitForm(userId: number, { formId }: SubmitFormDto): Promise<Form> {

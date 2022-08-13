@@ -8,9 +8,15 @@ import { GoogleUser, JwtPayload } from './interfaces';
 import { User } from 'src/api/user/user.entity';
 import * as genpass from 'generate-password';
 import { CreateUserDto } from 'src/api/user/dto';
+import { ConfirmEmailDto } from './dto/confirm-email.dto';
+import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService, private jwtService: JwtService) {}
+  constructor(
+    private readonly userService: UserService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
 
   async validateUser(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
@@ -71,5 +77,20 @@ export class AuthService {
     };
 
     return loginRes;
+  }
+
+  async confirmEmail(confirmEmailDto: ConfirmEmailDto) {
+    const { token } = confirmEmailDto;
+
+    const decodeToken: JwtPayload = this.jwtService.verify(token, {
+      secret: this.configService.get('JWT_SECRET'),
+    });
+
+    const { userId } = decodeToken;
+
+    const userFound = await this.userService.findOneById(userId);
+    userFound.emailVerify = true;
+    userFound.save();
+    return userFound;
   }
 }

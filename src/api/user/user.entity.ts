@@ -26,6 +26,9 @@ export class User extends EntityBaseExtend {
   @Column({ unique: true })
   email: string;
 
+  @Column({ default: false })
+  emailVerify: boolean;
+
   @Column({ default: null })
   avatar: string;
 

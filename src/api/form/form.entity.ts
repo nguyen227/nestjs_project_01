@@ -19,7 +19,7 @@ export class Form extends EntityBaseExtend {
   @Column({ default: '' })
   review: string;
 
-  @ManyToOne(() => User, (user) => user.forms)
+  @ManyToOne(() => User, (user) => user.forms, { onDelete: 'CASCADE' })
   owner: User;
 
   @ManyToOne(() => User, (user) => user.reviewForms)

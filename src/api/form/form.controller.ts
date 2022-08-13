@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Put, Query, Request } from '@nestjs/common
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HasPermissions } from 'src/auth/decorators';
 import { RolePermission } from '../permission/permission.enum';
-import { GetFormReportDto, StatusDto } from './dto';
+import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
 import { CreateFormDto } from './dto/create-form.dto';
 import { SubmitFormDto } from './dto/submit-form.dto';
@@ -20,6 +20,13 @@ export class FormController {
   @ApiOperation({ summary: 'View own form' })
   public viewOwnForm(@Request() req: any, @Query() statusDto?: StatusDto) {
     return this.formService.getFormsByUserId(req.user.userId, statusDto);
+  }
+
+  @Get('/view')
+  @HasPermissions(RolePermission.READ_FORM)
+  @ApiOperation({ summary: 'View own form by id' })
+  public viewOwnFormById(@Request() req: any, @Query() viewFormDto?: ViewFormDto) {
+    return this.formService.getFormsByFormId(req.user.userId, viewFormDto);
   }
 
   @Post()

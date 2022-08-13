@@ -1,3 +1,4 @@
+import { ApiHideProperty } from '@nestjs/swagger';
 import { IsEmail, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Name } from 'src/shared/entity/NameExtend';
 
@@ -17,5 +18,6 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
+  @ApiHideProperty()
   avatar?: string;
 }

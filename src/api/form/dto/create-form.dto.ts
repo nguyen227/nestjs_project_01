@@ -5,6 +5,6 @@ export class CreateFormDto {
   @IsEnum(FormType)
   type: FormType;
 
-  @IsNumber()
-  ownerId: number;
+  @IsNumber({}, { each: true })
+  ownerIds: number[];
 }

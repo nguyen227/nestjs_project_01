@@ -7,7 +7,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { JwtPayload } from 'src/auth/interfaces';
+import { MailService } from 'src/mail/mail.service';
 import { FormService } from '../form/form.service';
 import { Role } from '../role/role.entity';
 import { UserRole } from '../role/role.enum';
@@ -24,6 +27,8 @@ export class UserService {
     @Inject(forwardRef(() => FormService))
     private formService: FormService,
     private configService: ConfigService,
+    private mailService: MailService,
+    private jwtService: JwtService,
   ) {}
 
   async updateProfile(id: number, updateProfileDto: UpdateProfileDto): Promise<User> {
@@ -57,13 +62,21 @@ export class UserService {
 
     const defaultRoleForNewUser = await this.roleService.findOneByRoleName(UserRole.EMPLOYEE);
     userCreate.roles = [defaultRoleForNewUser];
+
     userCreate.password = bcrypt.hashSync(
       password,
       bcrypt.genSaltSync(this.configService.get('bcrypt_salt')),
     );
 
     await userCreate.save();
+    await userCreate.reload();
 
+    const jwtPayload: JwtPayload = { userId: userCreate.id };
+    const emailToken = this.jwtService.sign(jwtPayload, {
+      secret: this.configService.get('JWT_SECRET'),
+    });
+
+    this.mailService.sendUserConfirmation(userCreate, emailToken);
     delete userCreate.password;
     return userCreate;
   }
