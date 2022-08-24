@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolePermission } from 'src/api/permission/permission.enum';
+import { PERMISSIONS } from 'src/api/permission/permission.enum';
 import { UserService } from 'src/api/user/user.service';
 import { PERMISSIONS_KEY } from '../decorators';
 import { JwtPayload } from '../interfaces';
@@ -9,14 +9,14 @@ import { JwtPayload } from '../interfaces';
 export class PermissionGuard implements CanActivate {
   constructor(private reflector: Reflector, private userService: UserService) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.get<RolePermission[]>(
+    const requiredPermissions = this.reflector.get<PERMISSIONS[]>(
       PERMISSIONS_KEY,
       context.getHandler(),
     );
     if (!requiredPermissions) return true;
     const jwtPayload: JwtPayload = context.switchToHttp().getRequest().user;
-    const { userId } = jwtPayload;
-    const userPermissions = await this.userService.getPermissionsNameByUserId(userId);
+    const { id } = jwtPayload;
+    const userPermissions = await this.userService.getPermissionsNameByUserId(id);
     // If user's permissions contain all required permissions, then allow access
     const allowAccess = requiredPermissions.every((permission) =>
       userPermissions.includes(permission),

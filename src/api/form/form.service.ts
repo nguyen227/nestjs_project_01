@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { MailService } from 'src/mail/mail.service';
 import { FindManyOptions } from 'typeorm';
-import { RolePermission } from '../permission/permission.enum';
+import { PERMISSIONS } from '../permission/permission.enum';
 import { UserService } from '../user/user.service';
 import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
@@ -36,11 +36,24 @@ export class FormService {
   async getFormsByFormId(userId: number, viewFormDto: ViewFormDto): Promise<any> {
     const { id } = viewFormDto;
     const userPermissions = await this.userService.getPermissionsNameByUserId(userId);
-    const formFound = await this.formRepo.findOneByIdWithRelations(id, ['owner', 'reviewer']);
+    const formFound = await this.formRepo.findOne(
+      { id },
+      { owner: true, reviewer: true },
+      { reviewer: { id: true, username: true }, owner: { id: true, username: true } },
+    );
     if (!formFound) throw new NotFoundException();
-    if (formFound.owner.id != userId && !userPermissions.includes(RolePermission.READ_ALL_FORM))
+    if (formFound.owner.id != userId && !userPermissions.includes(PERMISSIONS.READ_ALL_FORM))
       throw new ForbiddenException("You don't have permissions to view this form");
     return formFound;
+  }
+
+  async viewFormNeedApprove(userId: number): Promise<Form[]> {
+    const formsFound = await this.formRepo.find(
+      { status: FormStatus.SUBMITED, reviewer: { id: userId } },
+      { reviewer: true, owner: true },
+      { reviewer: {}, owner: { username: true } },
+    );
+    return formsFound;
   }
 
   async updateForm(authUserId: number, updateFormDto: UpdateFormDto): Promise<Form> {
@@ -48,56 +61,68 @@ export class FormService {
     const formFound = await this.formRepo.findOneById(formId);
     if (formFound.owner.id !== authUserId) throw new ForbiddenException();
     const formUpdate = Object.assign(formFound, form_data);
-    return formUpdate.save();
+    return this.formRepo.save(formUpdate);
   }
 
   async createForm(createFormDto: CreateFormDto): Promise<any> {
-    const { ownerIds } = createFormDto;
-    for await (const ownerId of ownerIds) {
-      const userFound = await this.userService.findOneById(ownerId);
-      const manager = await this.userService.getUserManager(userFound.id);
+    const { userIds } = createFormDto;
+    for await (const ownerId of userIds) {
+      const userFound = await this.userService.getUserById(ownerId);
       const formCreate = this.formRepo.create(createFormDto);
       formCreate.owner = userFound;
-      formCreate.reviewer = manager;
-      await formCreate.save();
+      await this.formRepo.save(formCreate);
       this.mailService.sendNewFormNotification(userFound, formCreate);
     }
-    return { message: `create form successfully for users: ${ownerIds}` };
+    return { message: `create form successful for users: ${userIds}` };
   }
 
-  async submitForm(userId: number, { formId }: SubmitFormDto): Promise<Form> {
-    const userFound = await this.userService.findOneById(userId);
-    console.log(userFound.manager);
-    const formFound = await this.formRepo.findOneById(formId);
+  async submitForm(userId: number, { formId }: SubmitFormDto): Promise<any> {
+    const manager = await this.userService.getUserManager(userId);
+    const formFound = await this.formRepo.findOne(
+      { id: formId },
+      { owner: true, reviewer: true },
+      { owner: { id: true } },
+    );
     if (formFound.owner.id !== userId) throw new ForbiddenException();
+    if (formFound.status !== FormStatus.NEW)
+      throw new BadRequestException(`This form has been submited`);
 
+    formFound.reviewer = manager;
     formFound.status = FormStatus.SUBMITED;
 
-    return formFound;
-    return formFound.save();
+    await this.formRepo.save(formFound);
+    return { message: `submit form successful` };
   }
 
   async approveForm(authUserId: number, approveFormDto: ApproveFormDto): Promise<Form> {
     const { formId, review } = approveFormDto;
 
-    const formFound = await this.formRepo.findOneByIdWithRelations(formId, ['reviewer']);
+    const formFound = await this.formRepo.findOne(
+      { id: formId },
+      { reviewer: true },
+      { reviewer: { id: true } },
+    );
 
     if (formFound.reviewer.id !== authUserId)
       throw new ForbiddenException(`You can't approve this form`);
+
+    if (formFound.status === FormStatus.CLOSED || formFound.status === FormStatus.APPROVED)
+      throw new BadRequestException(`You already approved this form`);
     formFound.status = FormStatus.APPROVED;
     formFound.review = review;
 
-    return formFound.save();
+    return this.formRepo.save(formFound);
   }
 
   async closeForm(formId: number): Promise<Form> {
     const formFound = await this.formRepo.findOneById(formId);
 
     if (!formFound) throw new BadRequestException(`Form not found!`);
-
+    if (formFound.status === FormStatus.CLOSED)
+      throw new BadRequestException(`Form already closed!`);
     formFound.status = FormStatus.CLOSED;
 
-    return formFound.save();
+    return this.formRepo.save(formFound);
   }
 
   async getFormReport(query: GetFormReportDto): Promise<[Form[], number]> {

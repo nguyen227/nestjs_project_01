@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Put, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HasPermissions } from 'src/auth/decorators';
-import { RolePermission } from '../permission/permission.enum';
+import { PERMISSIONS } from '../permission/permission.enum';
 import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
 import { CreateFormDto } from './dto/create-form.dto';
@@ -16,56 +16,63 @@ export class FormController {
   constructor(private formService: FormService) {}
 
   @Get()
-  @HasPermissions(RolePermission.READ_FORM)
+  @HasPermissions(PERMISSIONS.READ_FORM)
   @ApiOperation({ summary: 'View own form' })
   public viewOwnForm(@Request() req: any, @Query() statusDto?: StatusDto) {
-    return this.formService.getFormsByUserId(req.user.userId, statusDto);
+    return this.formService.getFormsByUserId(req.user.id, statusDto);
   }
 
   @Get('/view')
-  @HasPermissions(RolePermission.READ_FORM)
+  @HasPermissions(PERMISSIONS.READ_FORM)
   @ApiOperation({ summary: 'View own form by id' })
   public viewOwnFormById(@Request() req: any, @Query() viewFormDto?: ViewFormDto) {
-    return this.formService.getFormsByFormId(req.user.userId, viewFormDto);
+    return this.formService.getFormsByFormId(req.user.id, viewFormDto);
   }
 
   @Post()
-  @HasPermissions(RolePermission.CREATE_FORM)
+  @HasPermissions(PERMISSIONS.CREATE_FORM)
   @ApiOperation({ summary: 'Create form for user' })
   public createForm(@Body() createFormDto: CreateFormDto) {
     return this.formService.createForm(createFormDto);
   }
 
   @Put()
-  @HasPermissions(RolePermission.UPDATE_FORM)
+  @HasPermissions(PERMISSIONS.UPDATE_FORM)
   @ApiOperation({ summary: 'Update own form data' })
   public updateForm(@Request() req: any, @Body() updateFormDto: UpdateFormDto) {
-    return this.formService.updateForm(req.user.userId, updateFormDto);
+    return this.formService.updateForm(req.user.id, updateFormDto);
   }
 
   @Put('/submit')
-  @HasPermissions(RolePermission.SUBMIT_FORM)
+  @HasPermissions(PERMISSIONS.SUBMIT_FORM)
   @ApiOperation({ summary: 'Submit form to manager' })
   public submitForm(@Request() req: any, @Body() submitFormDto: SubmitFormDto) {
-    return this.formService.submitForm(req.user.userId, submitFormDto);
+    return this.formService.submitForm(req.user.id, submitFormDto);
+  }
+
+  @Get('/approve')
+  @HasPermissions(PERMISSIONS.APPROVE_FORM)
+  @ApiOperation({ summary: 'View form need to approve' })
+  public viewFormNeedApprove(@Request() req: any) {
+    return this.formService.viewFormNeedApprove(req.user.id);
   }
 
   @Put('/approve')
-  @HasPermissions(RolePermission.APPROVE_FORM)
+  @HasPermissions(PERMISSIONS.APPROVE_FORM)
   @ApiOperation({ summary: "Approve user's form" })
   public approveForm(@Request() req: any, @Body() approveFormDto: ApproveFormDto) {
-    return this.formService.approveForm(req.user.userId, approveFormDto);
+    return this.formService.approveForm(req.user.id, approveFormDto);
   }
 
   @Put('/close')
-  @HasPermissions(RolePermission.CLOSE_FORM)
+  @HasPermissions(PERMISSIONS.CLOSE_FORM)
   @ApiOperation({ summary: "Close user's form" })
   public closeForm(@Query('formId') formId: number) {
     return this.formService.closeForm(formId);
   }
 
   @Get('/report')
-  @HasPermissions(RolePermission.READ_ALL_FORM)
+  @HasPermissions(PERMISSIONS.READ_ALL_FORM)
   @ApiOperation({ summary: 'View report about form' })
   public getFormReport(@Query() query: GetFormReportDto) {
     return this.formService.getFormReport(query);

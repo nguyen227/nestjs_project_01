@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,10 +8,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from 'src/auth/interfaces';
-import { MailService } from 'src/mail/mail.service';
-import { FormService } from '../form/form.service';
+import { MailService } from '../../mail/mail.service';
 import { Role } from '../role/role.entity';
-import { UserRole } from '../role/role.enum';
+import { ROLES } from '../role/role.enum';
 import { RoleService } from '../role/role.service';
 import { CreateUserDto, UpdateProfileDto } from './dto';
 import { User } from './user.entity';
@@ -24,26 +21,24 @@ export class UserService {
   constructor(
     private userRepo: UserRepository,
     private roleService: RoleService,
-    @Inject(forwardRef(() => FormService))
-    private formService: FormService,
     private configService: ConfigService,
     private mailService: MailService,
     private jwtService: JwtService,
   ) {}
 
   async updateProfile(id: number, updateProfileDto: UpdateProfileDto): Promise<User> {
-    const userFound = await this.findOneById(id);
-    const userUpdate = Object.assign(userFound, updateProfileDto);
-    console.log(updateProfileDto, userUpdate);
-    return userUpdate.save();
+    const userFound = await this.getUserById(id);
+    const userUpdate = Object.assign({ ...userFound }, updateProfileDto);
+
+    return this.userRepo.save(userUpdate);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepo.findBy({});
+  async getAll(): Promise<User[]> {
+    return this.userRepo.find({});
   }
 
-  async findOneByUsername(username: string): Promise<User> {
-    const userFound = await this.userRepo.findOneBy({ username });
+  async getUserByUsername(username: string): Promise<User> {
+    const userFound = await this.userRepo.findOne({ username });
     if (!userFound) throw new NotFoundException(`User ${username} not found`);
 
     return userFound;
@@ -52,15 +47,15 @@ export class UserService {
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     const { password, username, email } = createUserDto;
 
-    const usernameExists = await this.userRepo.findOneBy({ username });
+    const usernameExists = await this.userRepo.findOne({ username });
     if (usernameExists) throw new ConflictException(`User ${username} already exists`);
 
-    const emailExists = await this.userRepo.findOneBy({ email });
+    const emailExists = await this.userRepo.findOne({ email });
     if (emailExists) throw new ConflictException(`Email ${email} already exists`);
 
-    const userCreate = this.userRepo.create(createUserDto);
+    let userCreate = this.userRepo.create(createUserDto);
 
-    const defaultRoleForNewUser = await this.roleService.findOneByRoleName(UserRole.EMPLOYEE);
+    const defaultRoleForNewUser = await this.roleService.findOneByRoleName(ROLES.EMPLOYEE);
     userCreate.roles = [defaultRoleForNewUser];
 
     userCreate.password = bcrypt.hashSync(
@@ -68,44 +63,43 @@ export class UserService {
       bcrypt.genSaltSync(this.configService.get('bcrypt_salt')),
     );
 
-    await userCreate.save();
-    await userCreate.reload();
+    userCreate = await this.userRepo.save(userCreate);
 
-    const jwtPayload: JwtPayload = { userId: userCreate.id };
+    const jwtPayload: JwtPayload = { id: userCreate.id };
     const emailToken = this.jwtService.sign(jwtPayload, {
       secret: this.configService.get('JWT_SECRET'),
     });
 
     this.mailService.sendUserConfirmation(userCreate, emailToken);
+
     delete userCreate.password;
     return userCreate;
   }
 
-  async findPasswordById(id: number): Promise<User> {
-    return await this.userRepo.getPasswordById(id);
+  async getPasswordById(id: number): Promise<string> {
+    return await this.userRepo.findPasswordById(id);
   }
 
-  async addRoleByUserId(id: number, role: UserRole): Promise<User> {
-    const userFound = await this.userRepo.findOneBy({ id });
+  async addRoleByUserId(id: number, role: ROLES): Promise<User> {
+    const userFound = await this.userRepo.findOne({ id }, { roles: true });
     if (!userFound) throw new NotFoundException(`User ${id} not found`);
 
     const roleFound = await this.roleService.findOneByRoleName(role);
     if (!roleFound) throw new NotFoundException(`Role ${role} not found`);
 
-    const userRoles = await userFound.roles;
-
-    if (userRoles.map((role) => role.roleName).includes(role))
+    if (userFound.roles.map((role) => role.roleName).includes(role))
       throw new BadRequestException(`${userFound.username} already has role ${role}`);
 
-    userRoles.push(roleFound);
-    userFound.roles = userRoles;
-    return userFound.save();
+    userFound.roles.push(roleFound);
+
+    return this.userRepo.save(userFound);
   }
 
   async removeUserById(id: number): Promise<User> {
-    const userFound = await this.userRepo.findOneBy({ id });
+    const userFound = await this.userRepo.findOne({ id });
     if (!userFound) throw new NotFoundException(`User ${id} not found`);
-    return userFound.remove();
+
+    return this.userRepo.remove(userFound);
   }
 
   async getRolesByUserId(id: number): Promise<Role[]> {
@@ -118,44 +112,48 @@ export class UserService {
     return roles;
   }
 
-  async findOneById(id: number): Promise<User> {
-    const userFound = await this.userRepo.findOneBy({ id });
+  async getUserById(id: number): Promise<User> {
+    const userFound = await this.userRepo.findOne({ id });
     if (!id || !userFound) throw new NotFoundException(`User ${id} not found`);
     return userFound;
   }
 
-  async findOneByEmail(email: string): Promise<User> {
-    return this.userRepo.findOneBy({ email });
+  async getUserByEmail(email: string): Promise<User> {
+    return this.userRepo.findOne({ email });
   }
 
   async getPermissionsNameByUserId(userId: number): Promise<string[]> {
     return this.userRepo.findPermissionsNameById(userId);
   }
 
-  async getUsersMangageList(userId: number): Promise<User[]> {
-    return this.userRepo.getUsersMangageList(userId);
+  async getUsersManageList(userId: number): Promise<User[]> {
+    return this.userRepo.findUsersManageList(userId);
   }
 
   async getUserManager(userId: number): Promise<User> {
-    return this.userRepo.getUserManager(userId);
+    return this.userRepo.findUserManager(userId);
   }
 
-  async updateUserManage(userId: number, managerId: number): Promise<User> {
-    const authUser = await this.findOneById(userId);
-    const userManage = await this.findOneById(managerId);
+  async updateUserManager(userId: number, managerId: number): Promise<User> {
+    const user = await this.userRepo.findOne({ id: userId });
+    const manager = await this.userRepo.findOne({ id: managerId });
 
-    userManage.manager = authUser;
-    await userManage.save();
+    user.manager = manager;
+    await this.userRepo.save(user);
 
-    return userManage;
+    return user;
   }
 
   async readOwnProfile(authUserId: number): Promise<User> {
-    const userFound = await this.findOneById(authUserId);
+    const userFound = await this.userRepo.findOne({ id: authUserId });
     return userFound;
   }
 
   async getUserTree(): Promise<User[]> {
-    return this.userRepo.getUserTree();
+    return this.userRepo.findUserTree();
+  }
+
+  async save(user: User): Promise<User> {
+    return this.userRepo.save(user);
   }
 }

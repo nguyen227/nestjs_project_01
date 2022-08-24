@@ -1,11 +1,11 @@
 import { IsEnum } from 'class-validator';
-import { RolePermission } from 'src/api/permission/permission.enum';
-import { UserRole } from '../role.enum';
+import { PERMISSIONS } from 'src/api/permission/permission.enum';
+import { ROLES } from '../role.enum';
 
 export class UpdateRolePermissionDto {
-  @IsEnum(UserRole)
-  roleName: UserRole;
+  @IsEnum(ROLES)
+  roleName: ROLES;
 
-  @IsEnum(RolePermission)
-  permissionName: RolePermission;
+  @IsEnum(PERMISSIONS)
+  permissionName: PERMISSIONS;
 }

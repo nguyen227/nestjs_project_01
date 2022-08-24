@@ -1,26 +1,25 @@
 import { Body, Controller, Delete, Get, Param, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HasPermissions, HasRoles } from 'src/auth/decorators';
-import { MailService } from 'src/mail/mail.service';
-import { RolePermission } from '../permission/permission.enum';
+import { PERMISSIONS } from '../permission/permission.enum';
 import { UpdateRolePermissionDto } from '../role/dto';
 import { AddRoleDto } from '../role/dto/add-role.dto';
 import { Role } from '../role/role.entity';
-import { UserRole } from '../role/role.enum';
+import { ROLES } from '../role/role.enum';
 import { RoleService } from '../role/role.service';
 import { UpdateUserManager } from '../user/dto';
 import { User } from '../user/user.entity';
 import { UserService } from '../user/user.service';
 
 @Controller()
-@HasRoles(UserRole.ADMIN)
+@HasRoles(ROLES.ADMIN)
 @ApiTags('admin')
 @ApiBearerAuth()
 export class AdminController {
   constructor(private userService: UserService, private roleService: RoleService) {}
 
   @Delete('/user/delete:userId')
-  @HasPermissions(RolePermission.DELETE_USER)
+  @HasPermissions(PERMISSIONS.DELETE_USER)
   @ApiOperation({ summary: 'Delete user account' })
   public removeUserById(@Param('userId') id: number): Promise<User> {
     return this.userService.removeUserById(id);
@@ -35,7 +34,10 @@ export class AdminController {
   @Put('/user/manage')
   @ApiOperation({ summary: "Update user's manager" })
   public updateUserManage(@Query() updateUserManager: UpdateUserManager): Promise<User> {
-    return this.userService.updateUserManage(updateUserManager.userId, updateUserManager.managerId);
+    return this.userService.updateUserManager(
+      updateUserManager.userId,
+      updateUserManager.managerId,
+    );
   }
 
   @Get('/organization')

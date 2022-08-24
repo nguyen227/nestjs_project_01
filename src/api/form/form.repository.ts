@@ -28,6 +28,7 @@ export class FormRepository extends TypeOrmRepository<Form> {
         reviewer: {
           username: true,
         },
+        owner: {},
       },
     };
     return this.formRepo.find(conditions);
@@ -42,14 +43,6 @@ export class FormRepository extends TypeOrmRepository<Form> {
   }
 
   async findOneById(id: number): Promise<Form> {
-    return this.findOneBy({ id });
-  }
-
-  async findOneByIdWithRelations(id: number, relationsList: string[]): Promise<Form> {
-    const relations = {};
-    relationsList.forEach((element) => {
-      relations[element] = true;
-    });
-    return this.findOne({ where: { id }, relations });
+    return this.findOne({ id });
   }
 }

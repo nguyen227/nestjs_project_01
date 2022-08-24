@@ -1,4 +1,4 @@
-export enum RolePermission {
+export enum PERMISSIONS {
   READ_PROFILE = 'read_profile',
   UDPATE_PROFILE = 'update_profile',
   CREATE_FORM = 'create_form',

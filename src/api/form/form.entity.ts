@@ -16,7 +16,7 @@ export class Form extends EntityBaseExtend {
   @Column({ type: 'enum', enum: FormStatus, default: FormStatus.NEW })
   status: FormStatus;
 
-  @Column({ default: '' })
+  @Column({ default: null })
   review: string;
 
   @ManyToOne(() => User, (user) => user.forms, { onDelete: 'CASCADE' })

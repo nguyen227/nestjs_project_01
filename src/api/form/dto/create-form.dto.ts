@@ -6,5 +6,5 @@ export class CreateFormDto {
   type: FormType;
 
   @IsNumber({}, { each: true })
-  ownerIds: number[];
+  userIds: number[];
 }

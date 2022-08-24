@@ -1,40 +1,39 @@
 import {
-  BaseEntity,
   DeepPartial,
-  FindManyOptions,
-  FindOneOptions,
+  FindOptionsRelations,
+  FindOptionsSelect,
   FindOptionsWhere,
   Repository,
 } from 'typeorm';
 
-export class TypeOrmRepository<T extends BaseEntity> {
+export class TypeOrmRepository<T> {
   constructor(private baseRepo: Repository<T>) {}
 
   create(data: DeepPartial<T>): T {
     return this.baseRepo.create(data);
   }
 
-  async find(conditions: FindManyOptions): Promise<T[]> {
-    return this.baseRepo.find(conditions);
+  async save(entity: T): Promise<T> {
+    return this.baseRepo.save(entity);
   }
 
-  async findOne(condition: FindOneOptions): Promise<T> {
-    return await this.baseRepo.findOne(condition);
+  async remove(entity: T): Promise<T> {
+    return this.baseRepo.remove(entity);
   }
 
-  async findBy(condition: FindOptionsWhere<T>): Promise<T[]> {
-    return this.baseRepo.findBy(condition);
+  async findOne(
+    where: FindOptionsWhere<T>,
+    relations?: FindOptionsRelations<T>,
+    select?: FindOptionsSelect<T>,
+  ): Promise<T> {
+    return this.baseRepo.findOne({ where, relations, select });
   }
 
-  async findOneBy(condition: FindOptionsWhere<T>): Promise<T> {
-    return await this.baseRepo.findOneBy(condition);
-  }
-
-  async findOneWithRelations(key: FindOptionsWhere<T>, relationsList: string[]): Promise<T> {
-    const relations = {};
-    relationsList.forEach((element) => {
-      relations[element] = true;
-    });
-    return this.findOne({ where: key, relations });
+  async find(
+    where: FindOptionsWhere<T>,
+    relations?: FindOptionsRelations<T>,
+    select?: FindOptionsSelect<T>,
+  ): Promise<T[]> {
+    return this.baseRepo.find({ where, relations, select });
   }
 }

@@ -21,10 +21,10 @@ export class AuthService {
   async validateUser(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
 
-    const userFound = await this.userService.findOneByUsername(username);
+    const userFound = await this.userService.getUserByUsername(username);
     if (!userFound) return null;
 
-    const hashPassword = (await this.userService.findPasswordById(userFound.id)).password;
+    const hashPassword = await this.userService.getPasswordById(userFound.id);
     const equalPassword = bcrypt.compareSync(password, hashPassword);
     if (!equalPassword) return null;
 
@@ -38,12 +38,11 @@ export class AuthService {
       throw new BadRequestException();
     }
 
-    const payload: JwtPayload = { userId: userValid.id };
+    const payload: JwtPayload = { id: userValid.id };
 
     const loginRes: LoginRes = {
-      userId: userValid.id,
       accessToken: this.jwtService.sign(payload),
-      accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
+      accessTokenExpireIn: this.configService.get('jwt_config').expiresIn,
     };
 
     return loginRes;
@@ -52,7 +51,7 @@ export class AuthService {
   async googleAuth(googleUser: GoogleUser) {
     const { email, name, avatar } = googleUser;
 
-    const userFound = await this.userService.findOneByEmail(email);
+    const userFound = await this.userService.getUserByEmail(email);
 
     if (!userFound) {
       const createUserDto: CreateUserDto = {
@@ -68,10 +67,9 @@ export class AuthService {
       return this.userService.createUser(createUserDto);
     }
 
-    const payload: JwtPayload = { userId: userFound.id };
+    const payload: JwtPayload = { id: userFound.id };
 
     const loginRes: LoginRes = {
-      userId: userFound.id,
       accessToken: this.jwtService.sign(payload),
       accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
     };
@@ -86,11 +84,11 @@ export class AuthService {
       secret: this.configService.get('JWT_SECRET'),
     });
 
-    const { userId } = decodeToken;
+    const { id } = decodeToken;
 
-    const userFound = await this.userService.findOneById(userId);
+    const userFound = await this.userService.getUserById(id);
     userFound.emailVerify = true;
-    userFound.save();
+    await this.userService.save(userFound);
     return userFound;
   }
 }
