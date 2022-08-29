@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from 'src/auth/interfaces';
+import { File } from 'src/files/file.entity';
+import { FileService } from 'src/files/file.service';
 import { MailService } from '../../mail/mail.service';
 import { Role } from '../role/role.entity';
 import { ROLES } from '../role/role.enum';
@@ -24,6 +26,7 @@ export class UserService {
     private configService: ConfigService,
     private mailService: MailService,
     private jwtService: JwtService,
+    private fileService: FileService,
   ) {}
 
   async updateProfile(id: number, updateProfileDto: UpdateProfileDto): Promise<User> {
@@ -155,5 +158,21 @@ export class UserService {
 
   async save(user: User): Promise<User> {
     return this.userRepo.save(user);
+  }
+
+  async updateAvatar(userId: number, file: Express.Multer.File): Promise<File> {
+    const { buffer, originalname, mimetype } = file;
+    const userFound = await this.userRepo.findOne({ id: userId });
+
+    const avatar = await this.fileService.uploadFile(buffer, originalname, mimetype);
+
+    await this.userRepo.update(userId, {
+      ...userFound,
+      avatar,
+    });
+
+    if (userFound.avatar != null) await this.fileService.deleteFile(userFound.avatar.id);
+
+    return avatar;
   }
 }

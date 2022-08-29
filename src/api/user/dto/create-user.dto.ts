@@ -15,9 +15,4 @@ export class CreateUserDto {
   @MinLength(6)
   @MaxLength(20)
   password: string;
-
-  @IsString()
-  @IsOptional()
-  @ApiHideProperty()
-  avatar?: string;
 }

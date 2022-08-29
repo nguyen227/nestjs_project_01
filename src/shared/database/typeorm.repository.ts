@@ -3,8 +3,11 @@ import {
   FindOptionsRelations,
   FindOptionsSelect,
   FindOptionsWhere,
+  ObjectID,
   Repository,
+  UpdateResult,
 } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 export class TypeOrmRepository<T> {
   constructor(private baseRepo: Repository<T>) {}
@@ -19,6 +22,22 @@ export class TypeOrmRepository<T> {
 
   async remove(entity: T): Promise<T> {
     return this.baseRepo.remove(entity);
+  }
+
+  async update(
+    criteria:
+      | string
+      | string[]
+      | number
+      | number[]
+      | Date
+      | Date[]
+      | ObjectID
+      | ObjectID[]
+      | FindOptionsWhere<T>,
+    partialEntity: QueryDeepPartialEntity<T>,
+  ): Promise<UpdateResult> {
+    return this.baseRepo.update(criteria, partialEntity);
   }
 
   async findOne(

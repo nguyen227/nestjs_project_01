@@ -1,11 +1,14 @@
+import { File } from 'src/files/file.entity';
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
 import { Name } from 'src/shared/entity/NameExtend';
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   OneToMany,
+  OneToOne,
   Tree,
   TreeChildren,
   TreeParent,
@@ -30,9 +33,6 @@ export class User extends EntityBaseExtend {
   emailVerify: boolean;
 
   @Column({ default: null })
-  avatar: string;
-
-  @Column({ default: null })
   idCardNumber: string;
 
   @Column({ default: null })
@@ -49,6 +49,10 @@ export class User extends EntityBaseExtend {
 
   @Column({ type: 'enum', enum: UserType, default: UserType.PROBATIONARY })
   type: UserType;
+
+  @JoinColumn()
+  @OneToOne(() => File, { eager: true, nullable: true })
+  avatar: File;
 
   @ManyToMany(() => Role, (role) => role.users, {
     cascade: ['insert', 'update'],

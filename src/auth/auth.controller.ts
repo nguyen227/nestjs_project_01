@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { Public } from './decorators';
+import { Public } from '../shared/decorators';
 import { ConfirmEmailDto } from './dto/confirm-email.dto';
 
 @Controller('auth')

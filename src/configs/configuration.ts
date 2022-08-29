@@ -12,4 +12,10 @@ export default () => ({
     secret: process.env.JWT_SECRET || 'jwt_secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '10m',
   },
+  s3bucket: {
+    region: process.env.AWS_REGION,
+    access_key: process.env.AWS_ACCESS_KEY,
+    secret_key: process.env.AWS_SECRET_ACCESS_KEY,
+    bucket_name: process.env.AWS_PUBLIC_BUCKET_NAME,
+  },
 });

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HasPermissions, HasRoles } from 'src/auth/decorators';
+import { HasPermissions, HasRoles } from 'src/shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { UpdateRolePermissionDto } from '../role/dto';
 import { AddRoleDto } from '../role/dto/add-role.dto';

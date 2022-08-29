@@ -62,7 +62,6 @@ export class AuthService {
         },
         username: email,
         password: genpass.generate({ length: 10, numbers: true }),
-        avatar,
       };
       return this.userService.createUser(createUserDto);
     }

@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/commo
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS } from 'src/api/permission/permission.enum';
 import { UserService } from 'src/api/user/user.service';
-import { PERMISSIONS_KEY } from '../decorators';
+import { PERMISSIONS_KEY } from '../../shared/decorators';
 import { JwtPayload } from '../interfaces';
 
 @Injectable()

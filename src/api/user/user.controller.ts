@@ -1,12 +1,12 @@
-import { Body, Controller, Get, Put, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HasPermissions, HasRoles } from '../../auth/decorators';
+import { Body, Controller, Get, Put, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { HasPermissions, HasRoles } from '../../shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { ROLES } from '../role/role.enum';
 import { UpdateProfileDto } from './dto';
 import { User } from './user.entity';
 import { UserService } from './user.service';
-
 @HasRoles(ROLES.EMPLOYEE)
 @Controller('user')
 @ApiTags('user')
@@ -56,5 +56,25 @@ export class UserController {
   @ApiOperation({ summary: 'View employees under management' })
   public getUsersManage(@Request() req: any): Promise<User[]> {
     return this.userService.getUsersManageList(req.user.userId);
+  }
+
+  @Put('/avatar')
+  @HasPermissions(PERMISSIONS.UDPATE_PROFILE)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Update user avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  public uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
+    return this.userService.updateAvatar(req.user.id, file);
   }
 }

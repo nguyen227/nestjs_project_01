@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Put, Query, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HasPermissions } from 'src/auth/decorators';
+import { HasPermissions } from 'src/shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
