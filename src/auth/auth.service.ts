@@ -8,7 +8,7 @@ import { GoogleUser, JwtPayload } from './interfaces';
 import { User } from 'src/api/user/user.entity';
 import * as genpass from 'generate-password';
 import { CreateUserDto } from 'src/api/user/dto';
-import { ConfirmEmailDto } from './dto/confirm-email.dto';
+import { ConfirmEmailDto } from './dto/';
 import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AuthService {
@@ -49,7 +49,7 @@ export class AuthService {
   }
 
   async googleAuth(googleUser: GoogleUser) {
-    const { email, name, avatar } = googleUser;
+    const { email, name } = googleUser;
 
     const userFound = await this.userService.getUserByEmail(email);
 

@@ -1,12 +1,21 @@
-import { ApiHideProperty } from '@nestjs/swagger';
-import { IsEmail, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsObject,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Name } from 'src/shared/entity/NameExtend';
 
 export class CreateUserDto {
   @IsString()
+  @IsNotEmpty()
   username: string;
 
   @IsObject()
+  @IsNotEmpty()
   name: Name;
 
   @IsEmail()
@@ -14,5 +23,6 @@ export class CreateUserDto {
 
   @MinLength(6)
   @MaxLength(20)
+  @IsNotEmpty()
   password: string;
 }

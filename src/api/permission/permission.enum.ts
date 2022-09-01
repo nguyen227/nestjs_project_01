@@ -15,4 +15,5 @@ export enum PERMISSIONS {
   UPDATE_PERMISSION = 'update_permission',
   CLOSE_FORM = 'close_form',
   READ_ALL_FORM = 'read_all_form',
+  READ_ALL_PROFILE = 'read_all_profile',
 }

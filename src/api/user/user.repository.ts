@@ -3,14 +3,15 @@ import { TypeOrmRepository } from '../../shared/database/typeorm.repository';
 import { Repository, TreeRepository } from 'typeorm';
 import { Role } from '../role/role.entity';
 import { User } from './user.entity';
+import { USER_REPO, USER_TREE_REPO } from './user.constant';
 
 @Injectable()
 export class UserRepository extends TypeOrmRepository<User> {
   constructor(
-    @Inject('USER_REPOSITORY')
-    private userRepo: Repository<User>,
+    @Inject(USER_REPO)
+    public userRepo: Repository<User>,
 
-    @Inject('USER_TREE_REPO')
+    @Inject(USER_TREE_REPO)
     private userTreeRepo: TreeRepository<User>,
   ) {
     super(userRepo);

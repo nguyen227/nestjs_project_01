@@ -7,14 +7,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
 import { JwtPayload } from 'src/auth/interfaces';
-import { File } from 'src/files/file.entity';
-import { FileService } from 'src/files/file.service';
-import { MailService } from '../../mail/mail.service';
+import { File } from 'src/services/files/file.entity';
+import { FileService } from 'src/services/files/file.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { Role } from '../role/role.entity';
 import { ROLES } from '../role/role.enum';
 import { RoleService } from '../role/role.service';
-import { CreateUserDto, UpdateProfileDto } from './dto';
+import { CreateUserDto, UpdatePasswordDto, UpdateProfileDto } from './dto';
+import { UpdatePhoneNumberDto } from './dto/update-phone-number.dto';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
 
@@ -36,8 +38,8 @@ export class UserService {
     return this.userRepo.save(userUpdate);
   }
 
-  async getAll(): Promise<User[]> {
-    return this.userRepo.find({});
+  async getAll(pagiOptions: IPaginationOptions): Promise<Pagination<User>> {
+    return this.userRepo.findPagination(pagiOptions, {});
   }
 
   async getUserByUsername(username: string): Promise<User> {
@@ -174,5 +176,31 @@ export class UserService {
     if (userFound.avatar != null) await this.fileService.deleteFile(userFound.avatar.id);
 
     return avatar;
+  }
+
+  async updatePassword(id: number, updatePasswordDto: UpdatePasswordDto) {
+    const userFound = await this.userRepo.findOne({ id });
+
+    const { oldPassword, newPassword } = updatePasswordDto;
+    const userPassword = await this.userRepo.findPasswordById(id);
+
+    const isMatch = bcrypt.compareSync(oldPassword, userPassword);
+
+    if (!isMatch) throw new BadRequestException('Old password is incorrect');
+
+    userFound.password = bcrypt.hashSync(
+      newPassword,
+      bcrypt.genSaltSync(this.configService.get('bcrypt_salt')),
+    );
+
+    return this.userRepo.save(userFound);
+  }
+
+  async updatePhoneNumber(id: number, updatePhoneNumberDto: UpdatePhoneNumberDto) {
+    const userFound = await this.userRepo.findOne({ id });
+
+    userFound.phone = updatePhoneNumberDto.phoneNumber;
+
+    return this.userRepo.save(userFound);
   }
 }

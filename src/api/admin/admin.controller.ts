@@ -4,7 +4,6 @@ import { HasPermissions, HasRoles } from 'src/shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { UpdateRolePermissionDto } from '../role/dto';
 import { AddRoleDto } from '../role/dto/add-role.dto';
-import { Role } from '../role/role.entity';
 import { ROLES } from '../role/role.enum';
 import { RoleService } from '../role/role.service';
 import { UpdateUserManager } from '../user/dto';
@@ -42,13 +41,13 @@ export class AdminController {
 
   @Get('/organization')
   @ApiOperation({ summary: 'View organization chart' })
-  public getUserTree(): Promise<User[]> {
+  public getUserTree() {
     return this.userService.getUserTree();
   }
 
   @Get('/role')
   @ApiOperation({ summary: 'View all role in system' })
-  public getAllRole(): Promise<Role[]> {
+  public getAllRole() {
     return this.roleService.getAllRole();
   }
 

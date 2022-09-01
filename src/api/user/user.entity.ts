@@ -1,4 +1,5 @@
-import { File } from 'src/files/file.entity';
+import { Exclude } from 'class-transformer';
+import { File } from 'src/services/files/file.entity';
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
 import { Name } from 'src/shared/entity/NameExtend';
 import {
@@ -25,6 +26,9 @@ export class User extends EntityBaseExtend {
 
   @Column({ unique: true, default: null })
   phone: string;
+
+  @Column({ default: false })
+  phoneVerify: boolean;
 
   @Column({ unique: true })
   email: string;
@@ -71,4 +75,8 @@ export class User extends EntityBaseExtend {
 
   @OneToMany(() => Form, (form) => form.reviewer)
   reviewForms: Form[];
+
+  @Column({ nullable: true })
+  @Exclude()
+  refreshToken: string;
 }

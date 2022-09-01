@@ -1,3 +1,4 @@
+import { IPaginationOptions, paginate, Pagination } from 'nestjs-typeorm-paginate';
 import {
   DeepPartial,
   FindOptionsRelations,
@@ -54,5 +55,14 @@ export class TypeOrmRepository<T> {
     select?: FindOptionsSelect<T>,
   ): Promise<T[]> {
     return this.baseRepo.find({ where, relations, select });
+  }
+
+  async findPagination(
+    pagiOptions: IPaginationOptions,
+    where: FindOptionsWhere<T>,
+    relations?: FindOptionsRelations<T>,
+    select?: FindOptionsSelect<T>,
+  ): Promise<Pagination<T>> {
+    return paginate<T>(this.baseRepo, pagiOptions, { where, relations, select });
   }
 }

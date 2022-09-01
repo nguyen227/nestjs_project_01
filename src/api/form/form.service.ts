@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MailService } from 'src/mail/mail.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { FindManyOptions } from 'typeorm';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { UserService } from '../user/user.service';
@@ -125,7 +125,7 @@ export class FormService {
     return this.formRepo.save(formFound);
   }
 
-  async getFormReport(query: GetFormReportDto): Promise<[Form[], number]> {
+  async getFormReport(query: GetFormReportDto) {
     const { status, type, reviewerId, ownerId } = query;
     const conditions: FindManyOptions = {
       loadRelationIds: true,
@@ -140,6 +140,7 @@ export class FormService {
         },
       },
     };
-    return this.formRepo.findByConditionsAndCount(conditions);
+    const result = await this.formRepo.findByConditionsAndCount(conditions);
+    return { data: result[0], count: result[1] };
   }
 }

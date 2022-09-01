@@ -1,10 +1,23 @@
-import { Body, Controller, Get, Put, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Put,
+  Query,
+  Request,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
+import { PaginationDto } from 'src/shared/dto';
+import { RequestWithUser } from 'src/shared/interfaces';
 import { HasPermissions, HasRoles } from '../../shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { ROLES } from '../role/role.enum';
-import { UpdateProfileDto } from './dto';
+import { UpdatePasswordDto, UpdateProfileDto } from './dto';
+import { UpdatePhoneNumberDto } from './dto/update-phone-number.dto';
 import { User } from './user.entity';
 import { UserService } from './user.service';
 @HasRoles(ROLES.EMPLOYEE)
@@ -15,17 +28,21 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @Get()
-  @HasRoles(ROLES.ADMIN)
-  @HasPermissions(PERMISSIONS.UDPATE_PROFILE)
+  @HasPermissions(PERMISSIONS.READ_ALL_PROFILE)
   @ApiOperation({ summary: 'Get infor of all user' })
-  public getAllUser(): Promise<User[]> {
-    return this.userService.getAll();
+  public getAllUser(@Query() paginationDto: PaginationDto): Promise<Pagination<User>> {
+    const pagiOptions: IPaginationOptions = {
+      limit: paginationDto.limit,
+      page: paginationDto.page,
+      route: '/user',
+    };
+    return this.userService.getAll(pagiOptions);
   }
 
   @Get('/profile')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View own profile' })
-  public readOwnProfile(@Request() req: any): Promise<User> {
+  public readOwnProfile(@Request() req: RequestWithUser): Promise<User> {
     return this.userService.readOwnProfile(req.user.id);
   }
 
@@ -33,7 +50,7 @@ export class UserController {
   @HasPermissions(PERMISSIONS.UDPATE_PROFILE)
   @ApiOperation({ summary: 'Update profile' })
   public udpateProfile(
-    @Request() req: any,
+    @Request() req: RequestWithUser,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<User> {
     return this.userService.updateProfile(req.user.id, updateProfileDto);
@@ -41,21 +58,21 @@ export class UserController {
 
   @Get('/roles')
   @ApiOperation({ summary: 'View own roles' })
-  public getUserRole(@Request() req: any): Promise<string[]> {
+  public getUserRole(@Request() req: RequestWithUser): Promise<string[]> {
     return this.userService.getRolesNameByUserId(req.user.id);
   }
 
   @Get('/permissions')
   @ApiOperation({ summary: 'View own permissions' })
-  public getUserPermissions(@Request() req: any): Promise<string[]> {
+  public getUserPermissions(@Request() req: RequestWithUser): Promise<string[]> {
     return this.userService.getPermissionsNameByUserId(req.user.id);
   }
 
   @Get('/manage')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View employees under management' })
-  public getUsersManage(@Request() req: any): Promise<User[]> {
-    return this.userService.getUsersManageList(req.user.userId);
+  public getUsersManage(@Request() req: RequestWithUser): Promise<User[]> {
+    return this.userService.getUsersManageList(req.user.id);
   }
 
   @Put('/avatar')
@@ -74,7 +91,25 @@ export class UserController {
       },
     },
   })
-  public uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
+  public uploadAvatar(@Request() req: RequestWithUser, @UploadedFile() file: Express.Multer.File) {
     return this.userService.updateAvatar(req.user.id, file);
+  }
+
+  @Put('/password')
+  @ApiOperation({ summary: 'Update user password' })
+  public updatePassword(
+    @Request() req: RequestWithUser,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    return this.userService.updatePassword(req.user.id, updatePasswordDto);
+  }
+
+  @Put('/update-phone')
+  @ApiOperation({ summary: 'Update user phone number' })
+  public updatePhoneNumber(
+    @Request() req: RequestWithUser,
+    @Body() updatePhoneNumberDto: UpdatePhoneNumberDto,
+  ) {
+    return this.userService.updatePhoneNumber(req.user.id, updatePhoneNumberDto);
   }
 }

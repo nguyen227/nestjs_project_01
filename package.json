@@ -42,6 +42,7 @@
     "jest-mock": "^28.1.3",
     "mongodb": "^4.8.1",
     "mysql": "^2.18.1",
+    "nestjs-typeorm-paginate": "^4.0.2",
     "nodemailer": "^6.7.7",
     "nvm": "^0.0.4",
     "passport": "^0.6.0",
@@ -51,6 +52,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
+    "twilio": "^3.81.0",
     "typeorm": "^0.3.7",
     "uuid": "^8.3.2"
   },

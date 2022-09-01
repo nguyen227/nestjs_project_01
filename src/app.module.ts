@@ -9,7 +9,8 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import configuration from './configs/configuration';
-import { MailModule } from './mail/mail.module';
+import { MailModule } from './services/mail/mail.module';
+import { SmsModule } from './services/sms/sms.module';
 import { LoggerMiddleware } from './shared/middleware/logger.middleware';
 
 @Module({
@@ -20,6 +21,7 @@ import { LoggerMiddleware } from './shared/middleware/logger.middleware';
     FormModule,
     AdminModule,
     MailModule,
+    SmsModule,
     PermissionModule,
   ],
   controllers: [AppController],

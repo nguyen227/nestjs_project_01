@@ -18,4 +18,9 @@ export default () => ({
     secret_key: process.env.AWS_SECRET_ACCESS_KEY,
     bucket_name: process.env.AWS_PUBLIC_BUCKET_NAME,
   },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    serviceSid: process.env.TWILIO_VERIFICATION_SERVICE_SID,
+  },
 });
