@@ -150,7 +150,7 @@ export class UserService {
   }
 
   async readOwnProfile(authUserId: number): Promise<User> {
-    const userFound = await this.userRepo.findOne({ id: authUserId });
+    const userFound = await this.userRepo.findOne({ id: authUserId }, { avatar: true });
     return userFound;
   }
 
@@ -164,7 +164,7 @@ export class UserService {
 
   async updateAvatar(userId: number, file: Express.Multer.File): Promise<File> {
     const { buffer, originalname, mimetype } = file;
-    const userFound = await this.userRepo.findOne({ id: userId });
+    const userFound = await this.userRepo.findOne({ id: userId }, { avatar: true });
 
     const avatar = await this.fileService.uploadFile(buffer, originalname, mimetype);
 

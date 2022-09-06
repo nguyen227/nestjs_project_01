@@ -55,7 +55,7 @@ export class User extends EntityBaseExtend {
   type: UserType;
 
   @JoinColumn()
-  @OneToOne(() => File, { eager: true, nullable: true })
+  @OneToOne(() => File, { nullable: true })
   avatar: File;
 
   @ManyToMany(() => Role, (role) => role.users, {
