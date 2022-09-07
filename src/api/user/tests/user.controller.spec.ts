@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { RequestWithUser } from 'src/shared/interfaces';
 import { UpdateProfileDto } from '../dto';
 import { UserController } from '../user.controller';
 import { UserService } from '../user.service';

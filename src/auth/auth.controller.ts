@@ -1,9 +1,10 @@
 import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Public } from '../shared/decorators';
 import { ConfirmEmailDto } from './dto/confirm-email.dto';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { RequestWithUser } from 'src/shared/interfaces';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -27,5 +28,11 @@ export class AuthController {
   @Public()
   async confirmEmail(@Query() confirmEmailDto: ConfirmEmailDto) {
     return this.authService.confirmEmail(confirmEmailDto);
+  }
+
+  @Get('/sendEmailVerification')
+  @ApiBearerAuth()
+  async sendEmailVerification(@Request() req: RequestWithUser) {
+    return this.authService.sendEmailVerification(req.user.id);
   }
 }

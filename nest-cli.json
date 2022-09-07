@@ -4,7 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "plugins": ["@nestjs/swagger"],
-    "assets": ["mail/templates/**/*"],
+    "assets": ["services/mail/templates/**/*"],
     "watchAssets": true
   }
 }

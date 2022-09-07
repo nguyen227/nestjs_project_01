@@ -37,13 +37,6 @@ export class UserRepository extends TypeOrmRepository<User> {
     return listRoles;
   }
 
-  async findPermissionsNameById(id: number): Promise<string[]> {
-    const user = await this.findOne({ id }, { roles: { permissions: true } });
-    const userPermissions = user.roles.flatMap((role) => role.permissions);
-    const listPermissions = [...new Set(userPermissions.map((permission) => permission.name))]; // distinct permissions
-    return listPermissions;
-  }
-
   async findUsersManageList(id: number): Promise<User[]> {
     const userFound = await this.userRepo.findOneBy({ id });
     const tree = await this.userTreeRepo.findDescendantsTree(userFound, { depth: 1 });

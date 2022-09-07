@@ -1,21 +1,23 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { UserService } from 'src/api/user/user.service';
-import { LoginDto } from './dto';
-import { LoginRes } from './interfaces/LoginRes.interface';
-import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { GoogleUser, JwtPayload } from './interfaces';
-import { User } from 'src/api/user/user.entity';
+import * as bcrypt from 'bcrypt';
 import * as genpass from 'generate-password';
 import { CreateUserDto } from 'src/api/user/dto';
+import { User } from 'src/api/user/user.entity';
+import { UserService } from 'src/api/user/user.service';
+import { MailService } from 'src/services/mail/mail.service';
+import { LoginDto } from './dto';
 import { ConfirmEmailDto } from './dto/';
-import { ConfigService } from '@nestjs/config';
+import { GoogleUser, JwtPayload } from './interfaces';
+import { LoginRes } from './interfaces/LoginRes.interface';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async validateUser(loginDto: LoginDto): Promise<any> {
@@ -89,5 +91,19 @@ export class AuthService {
     userFound.emailVerify = true;
     await this.userService.save(userFound);
     return userFound;
+  }
+
+  async sendEmailVerification(userId: number) {
+    const userFound = await this.userService.getUserById(userId);
+
+    const jwtPayload: JwtPayload = { id: userFound.id };
+    const emailToken = this.jwtService.sign(jwtPayload, {
+      secret: this.configService.get('JWT_SECRET'),
+    });
+
+    if (userFound.emailVerify) throw new BadRequestException('Email already verified!');
+    this.mailService.sendUserConfirmation(userFound, emailToken);
+
+    return { message: 'Send verification email successful!' };
   }
 }

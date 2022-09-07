@@ -12,6 +12,8 @@ import { JwtPayload } from 'src/auth/interfaces';
 import { File } from 'src/services/files/file.entity';
 import { FileService } from 'src/services/files/file.service';
 import { MailService } from 'src/services/mail/mail.service';
+import { Permission } from '../permission/permission.entity';
+import { PermissionService } from '../permission/permission.service';
 import { Role } from '../role/role.entity';
 import { ROLES } from '../role/role.enum';
 import { RoleService } from '../role/role.service';
@@ -29,6 +31,7 @@ export class UserService {
     private mailService: MailService,
     private jwtService: JwtService,
     private fileService: FileService,
+    private permissionService: PermissionService,
   ) {}
 
   async updateProfile(id: number, updateProfileDto: UpdateProfileDto): Promise<User> {
@@ -128,7 +131,9 @@ export class UserService {
   }
 
   async getPermissionsNameByUserId(userId: number): Promise<string[]> {
-    return this.userRepo.findPermissionsNameById(userId);
+    const permissionsFound = await this.permissionService.getPermissionsByUserId(userId);
+    const listPermissions = permissionsFound.map((permission) => permission.name);
+    return listPermissions;
   }
 
   async getUsersManageList(userId: number): Promise<User[]> {

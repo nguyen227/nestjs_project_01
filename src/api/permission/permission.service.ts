@@ -10,4 +10,8 @@ export class PermissionService {
   async findOneByName(name: PERMISSIONS): Promise<Permission> {
     return this.permissionRepo.findOne({ name });
   }
+
+  async getPermissionsByUserId(id: number): Promise<Permission[]> {
+    return this.permissionRepo.findPermisisonsByUserId(id);
+  }
 }

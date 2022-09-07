@@ -64,7 +64,7 @@ export class UserController {
 
   @Get('/permissions')
   @ApiOperation({ summary: 'View own permissions' })
-  public getUserPermissions(@Request() req: RequestWithUser): Promise<string[]> {
+  public getUserPermissions(@Request() req: RequestWithUser) {
     return this.userService.getPermissionsNameByUserId(req.user.id);
   }
 
