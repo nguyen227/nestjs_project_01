@@ -12,7 +12,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
 import { PaginationDto } from 'src/shared/dto';
-import { RequestWithUser } from 'src/shared/interfaces';
 import { HasPermissions, HasRoles } from '../../shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { ROLES } from '../role/role.enum';
@@ -42,7 +41,7 @@ export class UserController {
   @Get('/profile')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View own profile' })
-  public readOwnProfile(@Request() req: RequestWithUser): Promise<User> {
+  public readOwnProfile(@Request() req: any): Promise<User> {
     return this.userService.readOwnProfile(req.user.id);
   }
 
@@ -50,7 +49,7 @@ export class UserController {
   @HasPermissions(PERMISSIONS.UDPATE_PROFILE)
   @ApiOperation({ summary: 'Update profile' })
   public udpateProfile(
-    @Request() req: RequestWithUser,
+    @Request() req: any,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<User> {
     return this.userService.updateProfile(req.user.id, updateProfileDto);
@@ -58,20 +57,20 @@ export class UserController {
 
   @Get('/roles')
   @ApiOperation({ summary: 'View own roles' })
-  public getUserRole(@Request() req: RequestWithUser): Promise<string[]> {
+  public getUserRole(@Request() req: any): Promise<string[]> {
     return this.userService.getRolesNameByUserId(req.user.id);
   }
 
   @Get('/permissions')
   @ApiOperation({ summary: 'View own permissions' })
-  public getUserPermissions(@Request() req: RequestWithUser) {
+  public getUserPermissions(@Request() req: any) {
     return this.userService.getPermissionsNameByUserId(req.user.id);
   }
 
   @Get('/manage')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View employees under management' })
-  public getUsersManage(@Request() req: RequestWithUser): Promise<User[]> {
+  public getUsersManage(@Request() req: any): Promise<User[]> {
     return this.userService.getUsersManageList(req.user.id);
   }
 
@@ -91,23 +90,20 @@ export class UserController {
       },
     },
   })
-  public uploadAvatar(@Request() req: RequestWithUser, @UploadedFile() file: Express.Multer.File) {
+  public uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
     return this.userService.updateAvatar(req.user.id, file);
   }
 
   @Put('/password')
   @ApiOperation({ summary: 'Update user password' })
-  public updatePassword(
-    @Request() req: RequestWithUser,
-    @Body() updatePasswordDto: UpdatePasswordDto,
-  ) {
+  public updatePassword(@Request() req: any, @Body() updatePasswordDto: UpdatePasswordDto) {
     return this.userService.updatePassword(req.user.id, updatePasswordDto);
   }
 
   @Put('/update-phone')
   @ApiOperation({ summary: 'Update user phone number' })
   public updatePhoneNumber(
-    @Request() req: RequestWithUser,
+    @Request() req: any,
     @Body() updatePhoneNumberDto: UpdatePhoneNumberDto,
   ) {
     return this.userService.updatePhoneNumber(req.user.id, updatePhoneNumberDto);

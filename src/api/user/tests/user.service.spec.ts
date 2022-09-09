@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
+import { PermissionService } from 'src/api/permission/permission.service';
 import { ROLES } from 'src/api/role/role.enum';
 import { RoleService } from 'src/api/role/role.service';
 import { CreateUserDto, UpdateProfileDto } from '../dto';
@@ -29,7 +30,6 @@ const mockUserRepository = {
   remove: jest.fn().mockResolvedValue(user1),
   findRolesById: jest.fn().mockResolvedValue([role1, role2]),
   findRolesNameById: jest.fn().mockResolvedValue(['employee', 'hr']),
-  findPermissionsNameById: jest.fn().mockResolvedValue(['read_profile', 'update_profile']),
   findUsersManageList: jest.fn().mockResolvedValue([user1, user2]),
   findUserManager: jest.fn().mockResolvedValue(user1),
   findUserTree: jest.fn().mockResolvedValue({}),
@@ -37,6 +37,13 @@ const mockUserRepository = {
 
 const mockRoleService = {
   findOneByRoleName: jest.fn().mockResolvedValue(role1),
+};
+
+const mockPermissionService = {
+  getPermissionsByUserId: jest.fn().mockResolvedValue([
+    { id: 1, name: 'read_profile' },
+    { id: 2, name: 'update_profile' },
+  ]),
 };
 
 describe('UserService', () => {
@@ -52,6 +59,8 @@ describe('UserService', () => {
             return mockUserRepository;
           case RoleService:
             return mockRoleService;
+          case PermissionService:
+            return mockPermissionService;
         }
 
         if (typeof token === 'function') {
@@ -82,13 +91,6 @@ describe('UserService', () => {
       };
       const expectedResult = user1;
       expect(await service.updateProfile(1, updateProfileDto)).toEqual(expectedResult);
-    });
-  });
-
-  describe('-function findAll()', () => {
-    test('should return all user', async () => {
-      const expectedResult = [user1, user2];
-      expect(await service.getAll()).toEqual(expectedResult);
     });
   });
 

@@ -32,8 +32,8 @@ export class FormController {
   @Post()
   @HasPermissions(PERMISSIONS.CREATE_FORM)
   @ApiOperation({ summary: 'Create form for user' })
-  public createForm(@Body() createFormDto: CreateFormDto) {
-    return this.formService.createForm(createFormDto);
+  public createForm(@Request() req: any, @Body() createFormDto: CreateFormDto) {
+    return this.formService.createForm(req.user.id, createFormDto);
   }
 
   @Put()

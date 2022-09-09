@@ -64,12 +64,15 @@ export class FormService {
     return this.formRepo.save(formUpdate);
   }
 
-  async createForm(createFormDto: CreateFormDto): Promise<any> {
+  async createForm(creatorId: number, createFormDto: CreateFormDto): Promise<any> {
     const { userIds } = createFormDto;
+    const creatorFound = await this.userService.getUserById(creatorId);
     for await (const ownerId of userIds) {
       const userFound = await this.userService.getUserById(ownerId);
       const formCreate = this.formRepo.create(createFormDto);
       formCreate.owner = userFound;
+      formCreate.creator = creatorFound;
+      formCreate.createAt = new Date();
       await this.formRepo.save(formCreate);
       this.mailService.sendNewFormNotification(userFound, formCreate);
     }

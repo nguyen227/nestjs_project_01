@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RequestWithUser } from 'src/shared/interfaces';
 import { UpdateProfileDto } from '../dto';
 import { UserController } from '../user.controller';
 import { UserService } from '../user.service';
@@ -43,10 +42,6 @@ describe('UserController', () => {
 
   test('should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  test('should return an array of users', async () => {
-    expect(await controller.getAllUser()).toEqual([{ data: 'something1' }, { data: 'something2' }]);
   });
 
   test('should return profile of user', async () => {

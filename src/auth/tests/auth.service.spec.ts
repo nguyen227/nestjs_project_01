@@ -4,7 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { UserService } from 'src/api/user/user.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { mockJwtService } from 'src/utils/mocks/mockJwtService';
+import { mockMailService } from 'src/utils/mocks/mockMailService';
 import { mockConfigService } from '../../utils/mocks/mockConfigService';
 import { AuthService } from '../auth.service';
 import { LoginDto } from '../dto';
@@ -48,6 +50,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: MailService,
+          useValue: mockMailService,
         },
       ],
     }).compile();

@@ -12,7 +12,6 @@ import { JwtPayload } from 'src/auth/interfaces';
 import { File } from 'src/services/files/file.entity';
 import { FileService } from 'src/services/files/file.service';
 import { MailService } from 'src/services/mail/mail.service';
-import { Permission } from '../permission/permission.entity';
 import { PermissionService } from '../permission/permission.service';
 import { Role } from '../role/role.entity';
 import { ROLES } from '../role/role.enum';
@@ -36,6 +35,11 @@ export class UserService {
 
   async updateProfile(id: number, updateProfileDto: UpdateProfileDto): Promise<User> {
     const userFound = await this.getUserById(id);
+    const { email, username } = updateProfileDto;
+    if (email && (await this.userRepo.findOne({ email })))
+      throw new ConflictException(`Email already exists!`);
+    if (username && (await this.userRepo.findOne({ username })))
+      throw new ConflictException(`Username already exists!`);
     const userUpdate = Object.assign({ ...userFound }, updateProfileDto);
 
     return this.userRepo.save(userUpdate);
@@ -53,7 +57,7 @@ export class UserService {
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
-    const { password, username, email } = createUserDto;
+    const { password, username, email, phone } = createUserDto;
 
     const usernameExists = await this.userRepo.findOne({ username });
     if (usernameExists) throw new ConflictException(`User ${username} already exists`);
@@ -61,6 +65,8 @@ export class UserService {
     const emailExists = await this.userRepo.findOne({ email });
     if (emailExists) throw new ConflictException(`Email ${email} already exists`);
 
+    const phoneExists = await this.userRepo.findOne({ phone });
+    if (phoneExists) throw new ConflictException(`Phone already exists`);
     let userCreate = this.userRepo.create(createUserDto);
 
     const defaultRoleForNewUser = await this.roleService.findOneByRoleName(ROLES.EMPLOYEE);

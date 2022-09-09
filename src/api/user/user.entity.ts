@@ -76,6 +76,9 @@ export class User extends EntityBaseExtend {
   @OneToMany(() => Form, (form) => form.reviewer)
   reviewForms: Form[];
 
+  @OneToMany(() => Form, (form) => form.creator)
+  createForms: Form[];
+
   @Column({ nullable: true })
   @Exclude()
   refreshToken: string;
