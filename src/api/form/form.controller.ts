@@ -1,6 +1,9 @@
-import { Body, Controller, Get, Post, Put, Query, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpStatus, Post, Put, Query, Request } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { GoogleApiService } from 'src/services/googleapis/googleapi.service';
+import { SWAGGER_EXAMPLE } from 'src/shared/common/swagger.example';
 import { HasPermissions } from 'src/shared/decorators';
+import { genResponse } from 'src/utils/successResponse';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { GetFormReportDto, StatusDto, ViewFormDto } from './dto';
 import { ApproveFormDto } from './dto/approve-form.dto';
@@ -9,17 +12,19 @@ import { SubmitFormDto } from './dto/submit-form.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
 import { FormService } from './form.service';
 
-@Controller('form')
+@Controller({ path: 'form', version: '1' })
 @ApiTags('form')
 @ApiBearerAuth()
 export class FormController {
-  constructor(private formService: FormService) {}
+  constructor(private formService: FormService, private googleApiService: GoogleApiService) {}
 
   @Get()
   @HasPermissions(PERMISSIONS.READ_FORM)
   @ApiOperation({ summary: 'View own form' })
-  public viewOwnForm(@Request() req: any, @Query() statusDto?: StatusDto) {
-    return this.formService.getFormsByUserId(req.user.id, statusDto);
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GET_OWN_FORMS } })
+  public async viewOwnForm(@Request() req: any, @Query() statusDto?: StatusDto) {
+    const data = await this.formService.getFormsByUserId(req.user.id, statusDto);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Get('/view')
@@ -74,7 +79,17 @@ export class FormController {
   @Get('/report')
   @HasPermissions(PERMISSIONS.READ_ALL_FORM)
   @ApiOperation({ summary: 'View report about form' })
-  public getFormReport(@Query() query: GetFormReportDto) {
-    return this.formService.getFormReport(query);
+  public async getFormReport(@Query() query: GetFormReportDto) {
+    const data = await this.formService.getFormReport(query);
+    return genResponse(HttpStatus.OK, data);
+  }
+
+  @Get('/report/toGoogleSheet')
+  @HasPermissions(PERMISSIONS.READ_ALL_FORM)
+  @ApiOperation({ summary: 'View report about form and export to google sheet' })
+  public async getFormReportToSheet(@Query() query: GetFormReportDto) {
+    const data = await this.formService.getFormReport(query);
+
+    return this.googleApiService.createSpreadSheet(data.items);
   }
 }

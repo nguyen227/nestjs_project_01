@@ -1,18 +1,22 @@
 import {
   IsEmail,
   IsIdentityCard,
+  IsNotEmpty,
   IsNumberString,
-  IsObject,
   IsOptional,
-  IsPhoneNumber,
   IsString,
 } from 'class-validator';
-import { Name } from 'src/shared/entity/NameExtend';
 
 export class UpdateProfileDto {
-  @IsObject({ message: "provide name like 'name': {first: string, last: string}" })
+  @IsString()
+  @IsNotEmpty()
   @IsOptional()
-  name?: Name;
+  firstName?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  lastName?: string;
 
   @IsOptional()
   @IsEmail()

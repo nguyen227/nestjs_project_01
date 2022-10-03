@@ -26,6 +26,15 @@ export class UserRepository extends TypeOrmRepository<User> {
     return userWithPassword.password;
   }
 
+  async findRefreshTokenById(id: number): Promise<string> {
+    const userWithRefreshToken = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.refreshToken')
+      .where('user.id = :id', { id })
+      .getOne();
+    return userWithRefreshToken.refreshToken;
+  }
+
   async findRolesById(id: number): Promise<Role[]> {
     const user = await this.findOne({ id }, { roles: true });
     return user.roles;
@@ -37,16 +46,38 @@ export class UserRepository extends TypeOrmRepository<User> {
     return listRoles;
   }
 
-  async findUsersManageList(id: number): Promise<User[]> {
-    const userFound = await this.userRepo.findOneBy({ id });
-    const tree = await this.userTreeRepo.findDescendantsTree(userFound, { depth: 1 });
-    return tree.manage;
+  async findUsersManageList(userId: number) {
+    const userFound1 = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.id = :id', { id: userId })
+      .select([
+        'user.id',
+        'manage.id',
+        'manage.username',
+        'manage.firstName',
+        'manage.lastName',
+        'manage.email',
+      ])
+      .leftJoin('user.manage', 'manage')
+      .getOne();
+    return userFound1.manage;
   }
 
-  async findUserManager(id: number): Promise<User> {
-    const userFound = await this.userRepo.findOneBy({ id });
-    const tree = await this.userTreeRepo.findAncestorsTree(userFound, { depth: 1 });
-    return tree.manager;
+  async findUserManager(id: number) {
+    const userFound = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.id = :id', { id })
+      .select([
+        'user.id',
+        'manager.id',
+        'manager.username',
+        'manager.firstName',
+        'manager.lastName',
+        'manager.email',
+      ])
+      .leftJoin('user.manager', 'manager')
+      .getOne();
+    return userFound.manager;
   }
 
   async findUserTree(): Promise<User[]> {

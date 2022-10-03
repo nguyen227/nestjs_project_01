@@ -21,7 +21,7 @@ export class FileService {
       .upload({
         Bucket: config.bucket_name,
         Body: dataBuffer,
-        Key: `${uuid()}-${filename}`,
+        Key: `${uuid()}`,
         ContentType: mimetype,
       })
       .promise();
@@ -32,16 +32,18 @@ export class FileService {
     return newFile;
   }
 
-  async deleteFile(fileId: number) {
+  async putFile(fileId: number, dataBuffer: Buffer, mimetype: string) {
     const file = await this.fileRepo.findOneBy({ id: fileId });
     const s3 = new S3();
     const config: any = this.configService.get('s3bucket');
-    await s3
-      .deleteObject({
+    const uploadResult = await s3
+      .putObject({
         Bucket: config.bucket_name,
         Key: file.key,
+        Body: dataBuffer,
+        ContentType: mimetype,
       })
       .promise();
-    await this.fileRepo.delete(fileId);
+    return file;
   }
 }

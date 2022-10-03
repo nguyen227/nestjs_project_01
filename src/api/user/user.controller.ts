@@ -2,76 +2,107 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
   Put,
   Query,
-  Request,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConflictResponse,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { IPaginationOptions } from 'nestjs-typeorm-paginate';
+import { JwtPayload } from 'src/auth/interfaces';
+import { SWAGGER_EXAMPLE } from 'src/shared/common/swagger.example';
+import { GetUser } from 'src/shared/decorators/getUser.decorator';
 import { PaginationDto } from 'src/shared/dto';
+import { genResponse } from 'src/utils/successResponse';
 import { HasPermissions, HasRoles } from '../../shared/decorators';
 import { PERMISSIONS } from '../permission/permission.enum';
 import { ROLES } from '../role/role.enum';
-import { UpdatePasswordDto, UpdateProfileDto } from './dto';
+import { UpdateEmailDto, UpdatePasswordDto, UpdateProfileDto } from './dto';
 import { UpdatePhoneNumberDto } from './dto/update-phone-number.dto';
-import { User } from './user.entity';
 import { UserService } from './user.service';
 @HasRoles(ROLES.EMPLOYEE)
-@Controller('user')
+@Controller({ path: 'user', version: '1' })
 @ApiTags('user')
 @ApiBearerAuth()
-export class UserController {
+export class UserControllerV1 {
   constructor(private userService: UserService) {}
 
   @Get()
   @HasPermissions(PERMISSIONS.READ_ALL_PROFILE)
   @ApiOperation({ summary: 'Get infor of all user' })
-  public getAllUser(@Query() paginationDto: PaginationDto): Promise<Pagination<User>> {
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GETALL_USER_SUCCESS } })
+  public async getAllUser(@Query() paginationDto: PaginationDto) {
     const pagiOptions: IPaginationOptions = {
       limit: paginationDto.limit,
       page: paginationDto.page,
       route: '/user',
     };
-    return this.userService.getAll(pagiOptions);
+    const data = this.userService.getAll(pagiOptions);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Get('/profile')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View own profile' })
-  public readOwnProfile(@Request() req: any): Promise<User> {
-    return this.userService.readOwnProfile(req.user.id);
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GET_OWN_PROFILE_SUCCESS } })
+  public async readOwnProfile(@GetUser() user: JwtPayload) {
+    const data = await this.userService.readOwnProfile(user.id);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Put('/profile')
   @HasPermissions(PERMISSIONS.UDPATE_PROFILE)
   @ApiOperation({ summary: 'Update profile' })
-  public udpateProfile(
-    @Request() req: any,
+  public async udpateProfile(
+    @GetUser() user: JwtPayload,
     @Body() updateProfileDto: UpdateProfileDto,
-  ): Promise<User> {
-    return this.userService.updateProfile(req.user.id, updateProfileDto);
+  ) {
+    const data = await this.userService.updateProfile(user.id, updateProfileDto);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Get('/roles')
   @ApiOperation({ summary: 'View own roles' })
-  public getUserRole(@Request() req: any): Promise<string[]> {
-    return this.userService.getRolesNameByUserId(req.user.id);
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GET_OWN_ROLES_SUCCESS } })
+  public async getUserRole(@GetUser() user: JwtPayload) {
+    const data = await this.userService.getRolesNameByUserId(user.id);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Get('/permissions')
   @ApiOperation({ summary: 'View own permissions' })
-  public getUserPermissions(@Request() req: any) {
-    return this.userService.getPermissionsNameByUserId(req.user.id);
+  public async getUserPermissions(@GetUser() user: JwtPayload) {
+    const data = await this.userService.getPermissionsNameByUserId(user.id);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Get('/manage')
   @HasPermissions(PERMISSIONS.READ_PROFILE)
   @ApiOperation({ summary: 'View employees under management' })
-  public getUsersManage(@Request() req: any): Promise<User[]> {
-    return this.userService.getUsersManageList(req.user.id);
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GET_USER_UNDER_MANAGEMENT } })
+  public async getUsersManage(@GetUser() user: JwtPayload) {
+    const data = await this.userService.getUsersManageList(user.id);
+    return genResponse(HttpStatus.OK, data);
+  }
+
+  @Get('/manager')
+  @HasPermissions(PERMISSIONS.READ_PROFILE)
+  @ApiOperation({ summary: 'View manager' })
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.GET_MANAGER } })
+  public async getUserManager(@GetUser() user: JwtPayload) {
+    const data = await this.userService.getUserManager(user.id);
+    return genResponse(HttpStatus.OK, data);
   }
 
   @Put('/avatar')
@@ -90,22 +121,40 @@ export class UserController {
       },
     },
   })
-  public uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
-    return this.userService.updateAvatar(req.user.id, file);
+  public uploadAvatar(@GetUser() user: JwtPayload, @UploadedFile() file: Express.Multer.File) {
+    return this.userService.updateAvatar(user.id, file);
   }
 
   @Put('/password')
+  @ApiConsumes('application/x-www-form-urlencoded')
   @ApiOperation({ summary: 'Update user password' })
-  public updatePassword(@Request() req: any, @Body() updatePasswordDto: UpdatePasswordDto) {
-    return this.userService.updatePassword(req.user.id, updatePasswordDto);
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.CHANGE_PASSWORD_SUCCESS } })
+  async updatePassword(@GetUser() user: JwtPayload, @Body() updatePasswordDto: UpdatePasswordDto) {
+    await this.userService.updatePassword(user.id, updatePasswordDto);
+    return genResponse(HttpStatus.OK, null);
   }
 
-  @Put('/update-phone')
+  @Put('/phone')
   @ApiOperation({ summary: 'Update user phone number' })
-  public updatePhoneNumber(
-    @Request() req: any,
+  @ApiConsumes('application/x-www-form-urlencoded')
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.CHANGE_PHONENUMBER_SUCCESS } })
+  @ApiBadRequestResponse({ schema: { example: SWAGGER_EXAMPLE.BAD_REQUEST_RESPONSE } })
+  @ApiConflictResponse({ schema: { example: SWAGGER_EXAMPLE.CONFLICT_RESPONSE } })
+  public async updatePhoneNumber(
+    @GetUser() user: JwtPayload,
     @Body() updatePhoneNumberDto: UpdatePhoneNumberDto,
   ) {
-    return this.userService.updatePhoneNumber(req.user.id, updatePhoneNumberDto);
+    const data = await this.userService.updatePhoneNumber(user.id, updatePhoneNumberDto);
+    return genResponse(HttpStatus.OK, data);
+  }
+
+  @Put('/email')
+  @ApiOperation({ summary: 'Update user email' })
+  @ApiConsumes('application/x-www-form-urlencoded')
+  @ApiOkResponse({ schema: { example: SWAGGER_EXAMPLE.CHANGE_EMAIL_SUCCESS } })
+  @ApiConflictResponse({ schema: { example: SWAGGER_EXAMPLE.CONFLICT_RESPONSE } })
+  public async updateEmail(@GetUser() user: JwtPayload, @Body() updateEmailDto: UpdateEmailDto) {
+    const data = await this.userService.updateEmail(user.id, updateEmailDto);
+    return genResponse(HttpStatus.OK, data);
   }
 }

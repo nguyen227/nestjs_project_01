@@ -1,14 +1,11 @@
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
-import { Column, Entity, ManyToOne, OneToOne } from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { User } from '../user/user.entity';
 import { FormStatus, FormType } from './form.enum';
-
-export abstract class FormData {}
-
 @Entity()
 export class Form extends EntityBaseExtend {
-  @Column(() => FormData)
-  form_data: FormData;
+  @Column()
+  content: string;
 
   @Column({ type: 'enum', enum: FormType })
   type: FormType;
@@ -25,7 +22,7 @@ export class Form extends EntityBaseExtend {
   @ManyToOne(() => User, (user) => user.reviewForms)
   reviewer: User;
 
-  @Column()
+  @Column({ type: 'datetime', nullable: true, default: null })
   submitDate: Date;
 
   @ManyToOne(() => User, (user) => user.createForms)

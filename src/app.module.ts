@@ -5,17 +5,18 @@ import { AdminModule } from './api/admin/admin.module';
 import { FormModule } from './api/form/form.module';
 import { PermissionModule } from './api/permission/permission.module';
 import { UserModule } from './api/user/user.module';
-import { AppController } from './app.controller';
+import { AppControllerV1 } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import configuration from './configs/configuration';
+import { GoogleApiModule } from './services/googleapis/googleapi.module';
 import { MailModule } from './services/mail/mail.module';
 import { SmsModule } from './services/sms/sms.module';
 import { LoggerMiddleware } from './shared/middleware/logger.middleware';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ envFilePath: '.env.dev', load: [configuration], isGlobal: true }),
+    ConfigModule.forRoot({ envFilePath: '.env', load: [configuration], isGlobal: true }),
     UserModule,
     AuthModule,
     FormModule,
@@ -23,8 +24,9 @@ import { LoggerMiddleware } from './shared/middleware/logger.middleware';
     MailModule,
     SmsModule,
     PermissionModule,
+    GoogleApiModule,
   ],
-  controllers: [AppController],
+  controllers: [AppControllerV1],
   providers: [
     {
       provide: APP_GUARD,

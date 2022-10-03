@@ -1,10 +1,8 @@
-import { IsNumber, IsObject, IsOptional } from 'class-validator';
-import { FormData } from '../form.entity';
+import { IsNumber, IsString } from 'class-validator';
 
 export class UpdateFormDto {
-  @IsObject()
-  @IsOptional()
-  form_data: FormData;
+  @IsString()
+  content: string;
 
   @IsNumber()
   formId: number;

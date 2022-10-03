@@ -3,8 +3,13 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "plugins": ["@nestjs/swagger"],
-    "assets": ["services/mail/templates/**/*"],
+    "plugins": [
+      "@nestjs/swagger"
+    ],
+    "assets": [
+      "services/mail/templates/**/*",
+      "services/googleapis/keys"
+    ],
     "watchAssets": true
   }
 }

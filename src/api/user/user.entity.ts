@@ -1,7 +1,5 @@
-import { Exclude } from 'class-transformer';
 import { File } from 'src/services/files/file.entity';
 import { EntityBaseExtend } from 'src/shared/entity/EntityBaseExtend';
-import { Name } from 'src/shared/entity/NameExtend';
 import {
   Column,
   Entity,
@@ -21,9 +19,11 @@ import { UserType } from './user.constant';
 @Entity()
 @Tree('materialized-path')
 export class User extends EntityBaseExtend {
-  @Column(() => Name)
-  name: Name;
+  @Column()
+  firstName: string;
 
+  @Column()
+  lastName: string;
   @Column({ unique: true, default: null })
   phone: string;
 
@@ -79,7 +79,6 @@ export class User extends EntityBaseExtend {
   @OneToMany(() => Form, (form) => form.creator)
   createForms: Form[];
 
-  @Column({ nullable: true })
-  @Exclude()
+  @Column({ nullable: true, select: false })
   refreshToken: string;
 }

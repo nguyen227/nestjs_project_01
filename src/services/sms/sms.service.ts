@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from 'src/api/user/user.service';
+import { ERROR } from 'src/shared/common/error.constant';
 import { Twilio } from 'twilio';
 
 @Injectable()
@@ -24,13 +25,14 @@ export class SmsService {
       .verifications.create({ to: userFound.phone, channel: 'sms' });
 
     if (result.status !== 'pending') throw new BadRequestException('Something went wrong!');
-    return { message: 'Verification-code sent!' };
+    return { toNumber: userFound.phone, status: result.status };
   }
 
   async confirmPhoneNumber(userId: number, verificationCode: string) {
     const { serviceSid } = this.configService.get('twilio');
 
     const userFound = await this.userService.getUserById(userId);
+    if (userFound.phoneVerify) throw new BadRequestException(ERROR.USER.PHONE_VERIFIED);
 
     const result = await this.twilio.verify
       .services(serviceSid)
@@ -40,8 +42,13 @@ export class SmsService {
       throw new BadRequestException('Wrong code provided');
 
     userFound.phoneVerify = true;
-    await this.userService.save(userFound);
+    const userSave = await this.userService.save(userFound);
 
-    return { message: 'Phone number verify successful' };
+    return {
+      id: userSave.id,
+      username: userSave.username,
+      phone: userSave.phone,
+      phoneVerify: userSave.phoneVerify,
+    };
   }
 }

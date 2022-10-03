@@ -1,23 +1,17 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsObject,
-  IsPhoneNumber,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
-import { Name } from 'src/shared/entity/NameExtend';
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @IsObject()
+  @IsString()
   @IsNotEmpty()
-  name: Name;
+  firstName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  lastName: string;
 
   @IsEmail()
   email: string;
@@ -26,8 +20,4 @@ export class CreateUserDto {
   @MaxLength(20)
   @IsNotEmpty()
   password: string;
-
-  @IsPhoneNumber()
-  @IsNotEmpty()
-  phone: string;
 }

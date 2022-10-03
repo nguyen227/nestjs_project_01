@@ -8,16 +8,31 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendUserConfirmation(user: User, token: string) {
-    const confirmUrl = `http://localhost:3000/auth/confirmEmail?token=${token}`;
+    const confirmUrl = `http://localhost:3000/api/v1/auth/confirmEmail?token=${token}`;
 
-    await this.mailerService.sendMail({
+    const result = await this.mailerService.sendMail({
       to: user.email,
       from: '"Support Team" <support@example.com>',
       subject: 'Welcome to NestJS_Demo_App! Confirm your Email',
       template: './confirmation',
       context: {
-        name: user.name.first,
+        name: user.firstName,
         confirmUrl,
+      },
+    });
+    return result;
+  }
+
+  async sendNewUserInfo(user: User, password: string) {
+    await this.mailerService.sendMail({
+      to: user.email,
+      from: '"Support Team" <support@example.com>',
+      subject: 'Welcome to NestJS_Demo_App! Here is your account info',
+      template: './newUserInfo',
+      context: {
+        name: user.firstName,
+        username: user.username,
+        password,
       },
     });
   }
@@ -31,7 +46,7 @@ export class MailService {
       subject: `New ${form.type} form has been create! FormID: ${form.id}`,
       template: './newform',
       context: {
-        name: user.name.first,
+        name: user.firstName,
         viewFormUrl,
         type: form.type,
         formId: form.id,

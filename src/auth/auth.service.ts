@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -7,10 +12,12 @@ import { CreateUserDto } from 'src/api/user/dto';
 import { User } from 'src/api/user/user.entity';
 import { UserService } from 'src/api/user/user.service';
 import { MailService } from 'src/services/mail/mail.service';
+import { ERROR } from 'src/shared/common/error.constant';
 import { LoginDto } from './dto';
 import { ConfirmEmailDto } from './dto/';
 import { GoogleUser, JwtPayload } from './interfaces';
 import { LoginRes } from './interfaces/LoginRes.interface';
+import { Tokens } from './types/tokens.type';
 @Injectable()
 export class AuthService {
   constructor(
@@ -37,31 +44,25 @@ export class AuthService {
     const userValid: User = await this.validateUser(loginDto);
 
     if (!userValid) {
-      throw new BadRequestException();
+      throw new UnauthorizedException(ERROR.AUTH.BAD_CREADENTIALS.MESSAGE);
     }
 
-    const payload: JwtPayload = { id: userValid.id };
-
-    const loginRes: LoginRes = {
-      accessToken: this.jwtService.sign(payload),
-      accessTokenExpireIn: this.configService.get('jwt_config').expiresIn,
-    };
-
-    return loginRes;
+    const tokens = await this.getTokens(userValid.id);
+    userValid.refreshToken = await this.hashData(tokens.refreshToken);
+    this.userService.save(userValid);
+    return tokens;
   }
 
   async googleAuth(googleUser: GoogleUser) {
-    const { email, name } = googleUser;
+    const { email, name, accessToken } = googleUser;
 
     const userFound = await this.userService.getUserByEmail(email);
 
     if (!userFound) {
       const createUserDto: CreateUserDto = {
         email,
-        name: {
-          first: name.familyName,
-          last: name.givenName,
-        },
+        firstName: name.familyName,
+        lastName: name.givenName,
         username: email,
         password: genpass.generate({ length: 10, numbers: true }),
       };
@@ -71,11 +72,11 @@ export class AuthService {
     const payload: JwtPayload = { id: userFound.id };
 
     const loginRes: LoginRes = {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload, { secret: this.configService.get('JWT_SECRET') }),
       accessTokenExpireIn: process.env.JWT_EXPIRES_IN,
     };
 
-    return loginRes;
+    return { googleUser, ...loginRes, googleAccessToken: accessToken };
   }
 
   async confirmEmail(confirmEmailDto: ConfirmEmailDto) {
@@ -88,9 +89,16 @@ export class AuthService {
     const { id } = decodeToken;
 
     const userFound = await this.userService.getUserById(id);
+
+    if (userFound.emailVerify) throw new BadRequestException(ERROR.USER.EMAIL_VERIFIED);
     userFound.emailVerify = true;
-    await this.userService.save(userFound);
-    return userFound;
+    const userSave = await this.userService.save(userFound);
+    return {
+      id: userSave.id,
+      username: userSave.username,
+      email: userSave.email,
+      emailVerify: userSave.emailVerify,
+    };
   }
 
   async sendEmailVerification(userId: number) {
@@ -101,9 +109,53 @@ export class AuthService {
       secret: this.configService.get('JWT_SECRET'),
     });
 
-    if (userFound.emailVerify) throw new BadRequestException('Email already verified!');
+    if (userFound.emailVerify) throw new BadRequestException(ERROR.USER.EMAIL_VERIFIED.MESSAGE);
     this.mailService.sendUserConfirmation(userFound, emailToken);
+    return null;
+  }
 
-    return { message: 'Send verification email successful!' };
+  async refreshTokens(userId: number, refreshToken: string) {
+    const userRefreshTokenFound = await this.userService.getRefreshTokenById(userId);
+    const isRefreshTokenMatch = await bcrypt.compare(refreshToken, userRefreshTokenFound);
+    if (!isRefreshTokenMatch) throw new ForbiddenException(`Access denined!`);
+
+    const tokens = await this.getTokens(userId);
+    delete tokens.refreshToken;
+    delete tokens.refreshToken_ExpireIn;
+    return tokens;
+  }
+
+  async getTokens(userId: number): Promise<Tokens> {
+    const payload = { id: userId };
+
+    const accessToken_ExpireIn = this.configService.get('JWT_EXPIRES_IN');
+    const refreshToken_ExpireIn = this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_IN');
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: accessToken_ExpireIn,
+    });
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+      expiresIn: refreshToken_ExpireIn,
+    });
+    return { accessToken, accessToken_ExpireIn, refreshToken, refreshToken_ExpireIn };
+  }
+
+  async logout(userId: number) {
+    await this.updateHashRefreshToken(userId, null);
+    const userFound = await this.userService.getUserById(userId);
+
+    return { id: userFound.id, username: userFound.username };
+  }
+
+  async updateHashRefreshToken(userId: number, refreshToken: string) {
+    const hashRefeshToken = await this.hashData(refreshToken);
+    await this.userService.updateHashRefreshToken(userId, hashRefeshToken);
+  }
+
+  async hashData(data: string) {
+    if (data === null) return null;
+    return bcrypt.hash(data, 10);
   }
 }

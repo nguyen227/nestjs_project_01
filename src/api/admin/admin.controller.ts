@@ -10,14 +10,14 @@ import { UpdateUserManager } from '../user/dto';
 import { User } from '../user/user.entity';
 import { UserService } from '../user/user.service';
 
-@Controller()
+@Controller({ version: '1' })
 @HasRoles(ROLES.ADMIN)
 @ApiTags('admin')
 @ApiBearerAuth()
 export class AdminController {
   constructor(private userService: UserService, private roleService: RoleService) {}
 
-  @Delete('/user/delete:userId')
+  @Delete('/user/:userId/delete')
   @HasPermissions(PERMISSIONS.DELETE_USER)
   @ApiOperation({ summary: 'Delete user account' })
   public removeUserById(@Param('userId') id: number): Promise<User> {

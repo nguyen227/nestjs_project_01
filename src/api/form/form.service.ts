@@ -18,7 +18,6 @@ import { UpdateFormDto } from './dto/update-form.dto';
 import { Form } from './form.entity';
 import { FormStatus } from './form.enum';
 import { FormRepository } from './form.repository';
-
 @Injectable()
 export class FormService {
   constructor(
@@ -42,7 +41,11 @@ export class FormService {
       { reviewer: { id: true, username: true }, owner: { id: true, username: true } },
     );
     if (!formFound) throw new NotFoundException();
-    if (formFound.owner.id != userId && !userPermissions.includes(PERMISSIONS.READ_ALL_FORM))
+    if (
+      formFound.owner.id !== userId &&
+      formFound.reviewer.id !== userId &&
+      !userPermissions.includes(PERMISSIONS.READ_ALL_FORM)
+    )
       throw new ForbiddenException("You don't have permissions to view this form");
     return formFound;
   }
@@ -57,11 +60,15 @@ export class FormService {
   }
 
   async updateForm(authUserId: number, updateFormDto: UpdateFormDto): Promise<Form> {
-    const { formId, form_data } = updateFormDto;
-    const formFound = await this.formRepo.findOneById(formId);
+    const { formId, content } = updateFormDto;
+    const formFound = await this.formRepo.findOne(
+      { id: formId },
+      { owner: true },
+      { owner: { id: true, username: true }, content: true },
+    );
     if (formFound.owner.id !== authUserId) throw new ForbiddenException();
-    const formUpdate = Object.assign(formFound, form_data);
-    return this.formRepo.save(formUpdate);
+    formFound.content = content;
+    return this.formRepo.save(formFound);
   }
 
   async createForm(creatorId: number, createFormDto: CreateFormDto): Promise<any> {
@@ -92,7 +99,7 @@ export class FormService {
 
     formFound.reviewer = manager;
     formFound.status = FormStatus.SUBMITED;
-
+    formFound.submitDate = new Date();
     await this.formRepo.save(formFound);
     return { message: `submit form successful` };
   }
@@ -144,6 +151,6 @@ export class FormService {
       },
     };
     const result = await this.formRepo.findByConditionsAndCount(conditions);
-    return { data: result[0], count: result[1] };
+    return { items: result[0], count: result[1] };
   }
 }
